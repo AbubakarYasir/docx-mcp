@@ -41,6 +41,7 @@ from .headers_footers import HeadersFootersMixin
 from .honorifics import HonorificsMixin
 from .hyperlinks import HyperlinksMixin
 from .images import ImagesMixin
+from .indexing import IndexingMixin
 from .lists import ListsMixin
 from .litigation import LitigationMixin
 from .markdown_export import MarkdownExportMixin
@@ -90,6 +91,7 @@ class DocxDocument(
     HonorificsMixin,
     PageDesignMixin,
     NotesDesignMixin,
+    IndexingMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,
