@@ -300,7 +300,7 @@ Word shows both marks side by side: ~~30 days~~ **60 days**.
 
 - **paraId** is an 8-char hex string (e.g., `"1A2B3C4D"`). Get them from `get_headings()` or `search_text()`.
 - **position** in `insert_text`: `"start"`, `"end"`, or a substring to insert after.
-- **author** defaults to `"Claude"` for all tracked changes and comments.
+- **author** defaults to `"Claude"` for all tracked changes and comments, or to the `DOCX_MCP_AUTHOR` environment variable when it is set.
 - **Save to new file** to preserve the original: `save_document("/path/to/revised.docx")`.
 - **Always verify before editing**: Use `get_paragraph()` to see the exact text before calling `delete_text()`. The text must match exactly within a single run.
 

@@ -26,6 +26,10 @@ from .guards import InputGuard
 
 # ── OOXML namespace constants ───────────────────────────────────────────────
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+# Name shown in Word for tracked changes and comments when a tool is called
+# without an explicit author. Set DOCX_MCP_AUTHOR in the server's environment.
+DEFAULT_AUTHOR = os.environ.get("DOCX_MCP_AUTHOR", "").strip() or "Claude"
 W14 = "{http://schemas.microsoft.com/office/word/2010/wordml}"
 W15 = "{http://schemas.microsoft.com/office/word/2012/wordml}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"

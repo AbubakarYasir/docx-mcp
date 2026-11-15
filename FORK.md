@@ -37,11 +37,21 @@ In the Claude desktop app settings file:
 ```json
 "docx-mcp": {
   "command": "uvx",
-  "args": ["--from", "git+https://github.com/AbubakarYasir/docx-mcp", "docx-mcp-server"]
+  "args": ["--from", "docx-mcp-server[equations] @ git+https://github.com/AbubakarYasir/docx-mcp@main", "docx-mcp-server"],
+  "env": { "DOCX_MCP_AUTHOR": "Abu Bakar Gondal" }
 }
 ```
 
-`uvx` installs the latest commit of this fork. No version pin on the `mcp`
+`uvx` installs the latest commit of this fork.
+
+Settings (environment variables):
+
+| Variable | Default | Effect |
+|---|---|---|
+| `DOCX_MCP_AUTHOR` | `Claude` | Name on tracked changes and comments |
+| `DOCX_MCP_AUTO_BIDI` | `1` | `0` turns off automatic right-to-left markup |
+| `DOCX_MCP_RTL_LANG` | `ar-SA` | Proofing language for right-to-left text |
+ No version pin on the `mcp`
 library is needed any more: the server works with both mcp 1.x and 2.x.
 
 ## Keeping up with upstream

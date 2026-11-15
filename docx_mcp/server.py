@@ -21,6 +21,7 @@ except ImportError:  # mcp 1.x
     from mcp.server.fastmcp import FastMCP
 
 from docx_mcp.document import DocxDocument
+from docx_mcp.document.base import DEFAULT_AUTHOR
 
 mcp = FastMCP(
     "docx-mcp",
@@ -267,7 +268,7 @@ def add_table(
     para_id: str,
     rows: int,
     cols: int,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     document_handle: str = "",
 ) -> str:
     """Insert a new table after a paragraph with tracked insertion."""
@@ -281,7 +282,7 @@ def modify_cell(
     row: int,
     col: int,
     text: str,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     tracked: bool = True,
     document_handle: str = "",
 ) -> str:
@@ -309,7 +310,7 @@ def add_table_row(
     table_idx: int,
     row_idx: int = -1,
     cells: list[str] | None = None,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     document_handle: str = "",
 ) -> str:
     """Add a row to a table with tracked insertion. row_idx=-1 appends."""
@@ -322,7 +323,7 @@ def add_table_row(
 def delete_table_row(
     table_idx: int,
     row_idx: int,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     document_handle: str = "",
 ) -> str:
     """Delete a table row with tracked changes."""
@@ -574,7 +575,7 @@ def edit_header_footer(
     location: str,
     old_text: str,
     new_text: str,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     tracked: bool = True,
     document_handle: str = "",
 ) -> str:
@@ -1152,7 +1153,7 @@ def insert_text(
     para_id: str,
     text: str,
     position: str = "end",
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     context_before: str = "",
     context_after: str = "",
     ignore_case: bool = False,
@@ -1197,7 +1198,7 @@ def insert_text(
 def delete_text(
     para_id: str,
     text: str,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     context_before: str = "",
     context_after: str = "",
     ignore_case: bool = False,
@@ -1244,7 +1245,7 @@ def replace_text(
     para_id: str,
     find: str,
     replace: str,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     context_before: str = "",
     context_after: str = "",
     ignore_case: bool = False,
@@ -1377,7 +1378,7 @@ def set_formatting(
     italic: bool = False,
     underline: str = "",
     color: str = "",
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     document_handle: str = "",
 ) -> str:
     """Apply character formatting to text with tracked-change markup."""
@@ -1409,7 +1410,7 @@ def get_comments(document_handle: str = "") -> str:
 def add_comment(
     para_id: str,
     text: str,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     document_handle: str = "",
 ) -> str:
     """Add a comment anchored to a paragraph."""
@@ -1421,7 +1422,7 @@ def add_comment(
 def reply_to_comment(
     parent_id: int,
     text: str,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
     document_handle: str = "",
 ) -> str:
     """Reply to an existing comment (creates a threaded reply)."""
@@ -2325,7 +2326,7 @@ def update_paragraph(
     text: str = "",
     style: str = "",
     tracked: bool = False,
-    author: str = "Claude",
+    author: str = DEFAULT_AUTHOR,
 ) -> str:
     """Update the text and/or style of an existing paragraph.
 

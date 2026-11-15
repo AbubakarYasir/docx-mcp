@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from .base import W14, W, _now_iso, _preserve
+from .base import DEFAULT_AUTHOR, W14, W, _now_iso, _preserve
 from .errors import DocxMcpError, ErrCode
 
 
@@ -20,7 +20,7 @@ class FormattingMixin:
         italic: bool = False,
         underline: str | None = None,
         color: str | None = None,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         """Apply character formatting to a text substring with tracked changes.
 
@@ -143,7 +143,7 @@ class FormattingMixin:
         text: str | None = None,
         style: str | None = None,
         tracked: bool = False,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         doc = self._require("word/document.xml")
         para = self._find_para(doc, para_id)

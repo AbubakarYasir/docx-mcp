@@ -4,6 +4,11 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: your name on tracked changes
+
+- `DOCX_MCP_AUTHOR` sets the name Word shows for tracked changes and comments
+  when a tool is called without an explicit author (default stays "Claude").
+
 ### Added: Arabic and right-to-left support
 
 Word does not work out direction from the text: an Arabic paragraph is only

@@ -18,7 +18,7 @@ import re
 
 from lxml import etree
 
-from .base import W, _now_iso, _preserve
+from .base import DEFAULT_AUTHOR, W, _now_iso, _preserve
 
 # ── Normalisation ─────────────────────────────────────────────────────────────
 
@@ -537,7 +537,7 @@ class TracksMixin:
         text: str,
         *,
         position: str = "end",
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
         context_before: str = "",
         context_after: str = "",
         ignore_case: bool = False,
@@ -651,7 +651,7 @@ class TracksMixin:
         para_id: str,
         text: str,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
         context_before: str = "",
         context_after: str = "",
         ignore_case: bool = False,
@@ -689,7 +689,7 @@ class TracksMixin:
         *,
         find: str,
         replace: str,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
         context_before: str = "",
         context_after: str = "",
         ignore_case: bool = False,
