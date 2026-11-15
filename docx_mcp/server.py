@@ -3646,12 +3646,20 @@ def insert_ornament(
     points: int = 12,
     weight: float = 1.0,
     alignment: str = "center",
+    style: str | None = None,
+    number: str | None = None,
+    border: str | None = None,
+    height_cm: float | None = None,
     document_handle: str = "",
 ) -> str:
-    """Insert a generated Islamic-geometric ornament as vector art: star8
-    (khatam), rosette (n points), shamsa (title-page medallion), divider,
-    divider-dots, corner, band. color = lines, accent = fill (default: a light
-    tint)."""
+    """Insert Islamic ornament as native vector art, built with traditional
+    construction (woven girih, parallel offsets, Bézier fleurons):
+    star8 (eight-point star frame; number="١٢" puts a number inside),
+    rosette (woven strapwork, points=8/10/12/16), shamsa (title sunburst),
+    ring (segmented girih ring), divider (calligraphic swash with fleuron),
+    divider-dots, corner, band (style=rings | chain | hex-chain | khatam | 8 | 6),
+    cartouche-lobed / cartouche-banner / cartouche-arch (color = body,
+    border = edge). color = lines, accent = fill."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.insert_ornament(
@@ -3663,6 +3671,50 @@ def insert_ornament(
             points=points,
             weight=weight,
             alignment=alignment,
+            style=style,
+            number=number,
+            border=border,
+            height_cm=height_cm,
+        )
+    )
+
+
+@mcp.tool()
+def insert_cartouche_title(
+    text: str,
+    after_para_id: str | None = None,
+    kind: str = "lobed",
+    color: str = "264237",
+    border: str = "b79a5b",
+    text_color: str = "FFFFFF",
+    font: str | None = None,
+    size_pt: float = 18,
+    bold: bool = True,
+    width_cm: float | None = None,
+    height_cm: float | None = None,
+    style: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """A title on a cartouche: real, editable Word text centred on a vector
+    cartouche anchored behind it. kind: lobed (cusped label with knob, green
+    and gold by default), banner (rounded with fleuron ends), arch (pointed
+    ogee ends, cover style). style: paragraph style for the title (e.g.
+    "Heading 1" so it appears in the TOC)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_cartouche_title(
+            text,
+            after_para_id=after_para_id,
+            kind=kind,
+            color=color,
+            border=border,
+            text_color=text_color,
+            font=font,
+            size_pt=size_pt,
+            bold=bold,
+            width_cm=width_cm,
+            height_cm=height_cm,
+            style=style,
         )
     )
 

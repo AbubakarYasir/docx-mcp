@@ -55,8 +55,11 @@ any Arabic text that is still missing direction markup.
   `insert_toc(title="فهرس الموضوعات", styles={"Chapter": 1, "Bab": 2},
   levels=None)`. Word fills the page numbers when the file opens.
 - **Ornaments and frames:** `insert_ornament("shamsa")` on a title page,
-  `insert_ornament("divider")` between sections, `add_page_frame()` on every
-  page, `insert_svg(...)` for your own vector artwork.
+  `insert_cartouche_title("الباب الأول", kind="lobed")` for headings on a
+  cartouche, `insert_ornament("divider")` (calligraphic swash) between
+  sections, `insert_ornament("star8", number="١٢")`, woven `rosette`,
+  `ring`, `band`, and `add_page_frame()` for a woven border on every page.
+  `insert_svg(...)` for your own vector artwork.
 - **Themes:** `set_theme_fonts`, `apply_color_palette("scholarly-maroon")`.
 
 ## How every change is checked
