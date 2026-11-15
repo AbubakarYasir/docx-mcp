@@ -27,6 +27,60 @@ def _col_letter(n: int) -> str:
     return result
 
 
+_CHART_ORDER = {
+    "barChart": "barDir grouping varyColors ser dLbls gapWidth overlap serLines axId extLst",
+    "lineChart": (
+        "grouping varyColors ser dLbls dropLines hiLowLines upDownBars marker smooth axId extLst"
+    ),
+    "pieChart": "varyColors ser dLbls firstSliceAng extLst",
+}
+
+
+def _order_chart_children(chart_el: etree._Element) -> None:
+    """Sort a chart-type element's children into schema order (stable)."""
+    local = etree.QName(chart_el).localname
+    seq = _CHART_ORDER.get(local)
+    if not seq:
+        return
+    rank = {f"{C}{n}": i for i, n in enumerate(seq.split())}
+    kids = list(chart_el)
+    kids_sorted = sorted(enumerate(kids), key=lambda t: (rank.get(t[1].tag, len(rank)), t[0]))
+    for k in kids:
+        chart_el.remove(k)
+    chart_el.extend(k for _, k in kids_sorted)
+
+
+def _add_axes(plot_area: etree._Element, chart_el: etree._Element) -> None:
+    """Give bar/line charts the two axes Word requires (category + value)."""
+    cat_id, val_id = "500000001", "500000002"
+    etree.SubElement(chart_el, f"{C}axId", {"val": cat_id})
+    etree.SubElement(chart_el, f"{C}axId", {"val": val_id})
+    for tag, ax_id, cross_id, pos in (
+        ("catAx", cat_id, val_id, "b"),
+        ("valAx", val_id, cat_id, "l"),
+    ):
+        ax = etree.SubElement(plot_area, f"{C}{tag}")
+        etree.SubElement(ax, f"{C}axId", {"val": ax_id})
+        scaling = etree.SubElement(ax, f"{C}scaling")
+        etree.SubElement(scaling, f"{C}orientation", {"val": "minMax"})
+        etree.SubElement(ax, f"{C}delete", {"val": "0"})
+        etree.SubElement(ax, f"{C}axPos", {"val": pos})
+        if tag == "valAx":
+            etree.SubElement(ax, f"{C}majorGridlines")
+            etree.SubElement(ax, f"{C}numFmt", {"formatCode": "General", "sourceLinked": "1"})
+        etree.SubElement(ax, f"{C}majorTickMark", {"val": "out"})
+        etree.SubElement(ax, f"{C}minorTickMark", {"val": "none"})
+        etree.SubElement(ax, f"{C}tickLblPos", {"val": "nextTo"})
+        etree.SubElement(ax, f"{C}crossAx", {"val": cross_id})
+        etree.SubElement(ax, f"{C}crosses", {"val": "autoZero"})
+        if tag == "catAx":
+            etree.SubElement(ax, f"{C}auto", {"val": "1"})
+            etree.SubElement(ax, f"{C}lblAlgn", {"val": "ctr"})
+            etree.SubElement(ax, f"{C}lblOffset", {"val": "100"})
+        else:
+            etree.SubElement(ax, f"{C}crossBetween", {"val": "between"})
+
+
 def _build_chart_xml(
     title: str,
     series: list[dict],
@@ -65,11 +119,16 @@ def _build_chart_xml(
         chart_el = etree.SubElement(plot_area, f"{C}barChart")
         etree.SubElement(chart_el, f"{C}barDir", {"val": "col"})
         etree.SubElement(chart_el, f"{C}grouping", {"val": "clustered"})
+        etree.SubElement(chart_el, f"{C}varyColors", {"val": "0"})
+        etree.SubElement(chart_el, f"{C}gapWidth", {"val": "150"})
     elif chart_type == "line":
         chart_el = etree.SubElement(plot_area, f"{C}lineChart")
         etree.SubElement(chart_el, f"{C}grouping", {"val": "standard"})
+        etree.SubElement(chart_el, f"{C}varyColors", {"val": "0"})
+        etree.SubElement(chart_el, f"{C}marker", {"val": "1"})
     elif chart_type == "pie":
         chart_el = etree.SubElement(plot_area, f"{C}pieChart")
+        etree.SubElement(chart_el, f"{C}varyColors", {"val": "1"})
         etree.SubElement(chart_el, f"{C}firstSliceAng", {"val": "0"})
     else:
         raise ValueError(f"Unknown chart_type: {chart_type!r}")
@@ -114,9 +173,15 @@ def _build_chart_xml(
             vpt = etree.SubElement(num_cache, f"{C}pt", {"idx": str(vi)})
             etree.SubElement(vpt, f"{C}v").text = str(v)
 
+    if chart_type in ("bar", "line"):
+        _add_axes(plot_area, chart_el)
+    _order_chart_children(chart_el)
+
     # Legend
     legend = etree.SubElement(chart, f"{C}legend")
     etree.SubElement(legend, f"{C}legendPos", {"val": "b"})
+    etree.SubElement(legend, f"{C}overlay", {"val": "0"})
+    etree.SubElement(chart, f"{C}plotVisOnly", {"val": "1"})
 
     return cs
 
@@ -153,6 +218,7 @@ def _rebuild_series(chart_el: etree._Element, series: list[dict]) -> None:
         for vi, v in enumerate(values):
             vpt = etree.SubElement(num_cache, f"{C}pt", {"idx": str(vi)})
             etree.SubElement(vpt, f"{C}v").text = str(v)
+    _order_chart_children(chart_el)
 
 
 class ChartsMixin:

@@ -13,6 +13,8 @@ from pathlib import Path
 
 from lxml import etree
 
+from docx_mcp.document.schema_order import normalize_tree
+
 from .errors import DocxMcpError, ErrCode
 from .guards import InputGuard
 
@@ -288,13 +290,42 @@ class BaseMixin:
             "orphan_endnotes_removed": 0,
             "paraids_deduplicated": 0,
             "broken_rels_removed": 0,
+            "schema_order_fixed": 0,
         }
+
+        # ── Schema order of property elements (runs before anything else) ─
+        for rel_path, tree in self._trees.items():
+            if not rel_path.endswith(".xml") or tree is None:
+                continue
+            n = normalize_tree(tree)
+            if n:
+                repairs["schema_order_fixed"] += n
+                self._mark(rel_path)
 
         doc = self._tree("word/document.xml")
         if doc is None:
             return repairs
 
         body = doc.find(f"{W}body")
+
+        # ── Required page-setup attributes (Word rejects partial pgMar) ───
+        doc_root = self._tree("word/document.xml")
+        if doc_root is not None:
+            mar_defaults = {
+                "top": "1440",
+                "right": "1440",
+                "bottom": "1440",
+                "left": "1440",
+                "header": "708",
+                "footer": "708",
+                "gutter": "0",
+            }
+            for pg_mar in doc_root.iter(f"{W}pgMar"):
+                for attr, val in mar_defaults.items():
+                    if pg_mar.get(f"{W}{attr}") is None:
+                        pg_mar.set(f"{W}{attr}", val)
+                        repairs["schema_order_fixed"] += 1
+                        self._mark("word/document.xml")
 
         # ── Orphan footnotes ──────────────────────────────────────────────
         fn_tree = self._tree("word/footnotes.xml")

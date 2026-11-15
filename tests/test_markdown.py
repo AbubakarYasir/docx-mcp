@@ -582,9 +582,10 @@ class TestSectPrPath:
         from lxml import etree
 
         body = blank_doc._trees["word/document.xml"].find(f"{W}body")
-        # Add a sectPr element to the body
-        sect_pr = etree.SubElement(body, f"{W}sectPr")
-        etree.SubElement(sect_pr, f"{W}pgSz")
+        # Blank documents carry a body sectPr; add one if a template lacks it
+        if body.find(f"{W}sectPr") is None:
+            sect_pr = etree.SubElement(body, f"{W}sectPr")
+            etree.SubElement(sect_pr, f"{W}pgSz")
 
         MarkdownConverter.convert(blank_doc, "# Heading\n\nParagraph text")
         # sectPr should be last child of body

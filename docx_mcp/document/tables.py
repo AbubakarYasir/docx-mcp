@@ -78,27 +78,44 @@ class TablesMixin:
         tbl_w = etree.SubElement(tbl_pr, f"{W}tblW")
         tbl_w.set(f"{W}w", "0")
         tbl_w.set(f"{W}type", "auto")
-        # Track change on table
-        ins = etree.SubElement(tbl_pr, f"{W}ins")
-        ins.set(f"{W}id", str(cid))
-        ins.set(f"{W}author", author)
-        ins.set(f"{W}date", now)
+        tbl_look = etree.SubElement(tbl_pr, f"{W}tblLook")
+        tbl_look.set(f"{W}val", "04A0")
 
-        # Grid columns
+        # Grid columns: share a 16 cm text width evenly (9072 twips).
+        col_w = str(max(1, 9072 // max(cols, 1)))
         grid = etree.SubElement(tbl, f"{W}tblGrid")
         for _ in range(cols):
-            etree.SubElement(grid, f"{W}gridCol")
+            gc = etree.SubElement(grid, f"{W}gridCol")
+            gc.set(f"{W}w", col_w)
 
-        # Rows and cells
+        # Rows and cells. A tracked table insertion is marked on every row
+        # (w:trPr/w:ins) and every cell paragraph mark (w:pPr/w:rPr/w:ins);
+        # w:ins is not allowed inside w:tblPr.
         for _ in range(rows):
             tr = etree.SubElement(tbl, f"{W}tr")
             tr.set(f"{W14}paraId", self._new_para_id())
             tr.set(f"{W14}textId", "77777777")
+            tr_pr = etree.SubElement(tr, f"{W}trPr")
+            row_ins = etree.SubElement(tr_pr, f"{W}ins")
+            row_ins.set(f"{W}id", str(cid))
+            row_ins.set(f"{W}author", author)
+            row_ins.set(f"{W}date", now)
+            cid += 1
             for _ in range(cols):
                 tc = etree.SubElement(tr, f"{W}tc")
+                tc_pr = etree.SubElement(tc, f"{W}tcPr")
+                tc_w = etree.SubElement(tc_pr, f"{W}tcW")
+                tc_w.set(f"{W}w", col_w)
+                tc_w.set(f"{W}type", "dxa")
                 p = etree.SubElement(tc, f"{W}p")
                 p.set(f"{W14}paraId", self._new_para_id())
                 p.set(f"{W14}textId", "77777777")
+                p_rpr = etree.SubElement(etree.SubElement(p, f"{W}pPr"), f"{W}rPr")
+                mark_ins = etree.SubElement(p_rpr, f"{W}ins")
+                mark_ins.set(f"{W}id", str(cid))
+                mark_ins.set(f"{W}author", author)
+                mark_ins.set(f"{W}date", now)
+                cid += 1
 
         para.addnext(tbl)
         self._mark("word/document.xml")
