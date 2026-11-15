@@ -143,8 +143,10 @@ class RevisionsMixin:
         id_str = str(change_id)
         for part in _story_parts(self._trees):
             root = self._trees[part]
-            for el in root.iter(f"{W}ins", f"{W}del"):
+            for el in root.iter(f"{W}ins", f"{W}del", *_FORMAT_TAGS):
                 if el.get(f"{W}id") == id_str:
+                    if el.tag in _FORMAT_TAGS:
+                        return "formatting"
                     return "insertion" if el.tag == f"{W}ins" else "deletion"
         raise ValueError(f"No tracked change with id={change_id}")
 
@@ -171,19 +173,11 @@ class RevisionsMixin:
         Returns:
             {"changes_accepted": int, "formatting_changes_removed": int}
         """
+        fmt_count = sum(
+            1 for part in _story_parts(self._trees) for _ in self._trees[part].iter(*_FORMAT_TAGS)
+        )
         accepted_result = self.accept_all_changes()
-        changes_accepted: int = accepted_result["accepted"]
-
-        doc = self._require("word/document.xml")
-        fmt_count = 0
-        for tag in (f"{W}rPrChange", f"{W}pPrChange"):
-            for el in list(doc.iter(tag)):
-                el.getparent().remove(el)
-                fmt_count += 1
-
-        if fmt_count:
-            self._mark("word/document.xml")
-        # accept_all_changes already marks dirty when count > 0
+        changes_accepted: int = accepted_result["accepted"] - fmt_count
 
         return {
             "changes_accepted": changes_accepted,
@@ -294,9 +288,43 @@ def _remove_row(tr) -> None:
         tbl.getparent().remove(tbl)
 
 
+_FORMAT_CHANGES = (
+    "rPrChange",
+    "pPrChange",
+    "tblPrChange",
+    "tcPrChange",
+    "trPrChange",
+    "sectPrChange",
+)
+_FORMAT_TAGS = tuple(f"{W}{t}" for t in _FORMAT_CHANGES)
+# Children of w:pPr that a w:pPrChange does not describe and must survive a reject.
+_PPR_KEEP = (f"{W}rPr", f"{W}sectPr")
+
+
+def _resolve_format_change(el, accept: bool) -> None:
+    """Accept (drop the record) or reject (restore the old properties)."""
+    props = el.getparent()
+    if props is None:
+        return
+    old = el.find(f"{W}{etree.QName(props).localname}")
+    props.remove(el)
+    if accept or old is None:
+        return
+    keep = [c for c in props if c.tag in _PPR_KEEP] if props.tag == f"{W}pPr" else []
+    for c in list(props):
+        props.remove(c)
+    for c in list(old):
+        props.append(c)
+    for c in keep:
+        props.append(c)
+
+
 def resolve_revision(el, accept: bool) -> None:
-    """Accept or reject one w:ins / w:del, whatever it is attached to."""
+    """Accept or reject one revision (w:ins, w:del or a formatting change)."""
     if el.getparent() is None:
+        return
+    if el.tag in _FORMAT_TAGS:
+        _resolve_format_change(el, accept)
         return
     is_ins = el.tag == f"{W}ins"
     kind = _kind(el)
@@ -346,14 +374,14 @@ def resolve_all(
             continue
         found = [
             el
-            for el in root.iter(f"{W}ins", f"{W}del")
+            for el in root.iter(f"{W}ins", f"{W}del", *_FORMAT_TAGS)
             if (author is None or el.get(f"{W}author") == author)
             and (id_str is None or el.get(f"{W}id") == id_str)
         ]
         if not found:
             continue
-        order = {"inline": 0, "other": 0, "mark": 1, "row": 2}
-        found.sort(key=lambda e: order[_kind(e)])
+        order = {"format": 0, "inline": 1, "other": 1, "mark": 2, "row": 3}
+        found.sort(key=lambda e: order["format" if e.tag in _FORMAT_TAGS else _kind(e)])
         # Inline revisions nested inside another matching revision go with it.
         for el in found:
             if el.getparent() is None:

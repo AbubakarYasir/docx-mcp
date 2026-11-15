@@ -22,6 +22,7 @@ from .base import (
     _now_iso,
     _preserve,
 )
+from .bidi import BidiMixin
 from .bookmarks import BookmarksMixin
 from .captions import CaptionMixin
 from .changesummary import ChangeSummaryMixin
@@ -78,6 +79,7 @@ class DocxDocument(
     TracksMixin,
     RevisionsMixin,
     FormattingMixin,
+    BidiMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,

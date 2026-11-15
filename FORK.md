@@ -7,6 +7,21 @@ that open cleanly in Microsoft Word, and for Arabic / right-to-left work.
 
 Every change is listed in [CHANGELOG.md](CHANGELOG.md) with the reason for it.
 
+## Arabic and right-to-left documents
+
+Write Arabic as you would English: new paragraphs, footnotes, table cells,
+headings and Markdown imports are marked right-to-left automatically when the
+document is saved, including lines that mix Arabic and English.
+
+For a fully Arabic document, call once:
+
+```
+set_document_direction("rtl", complex_script_font="Amiri", complex_script_size_pt=16)
+```
+
+English paragraphs inside it stay left-to-right. `get_direction_report` lists
+any Arabic text that is still missing direction markup.
+
 ## How every change is checked
 
 1. The full upstream test suite still passes.

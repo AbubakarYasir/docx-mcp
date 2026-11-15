@@ -52,6 +52,7 @@ class RawPartsMixin:
             raise DocxMcpError(ErrCode.OOXML_INVALID, f"Invalid XML: {e}") from e
 
         self._trees[part_path] = new_tree  # type: ignore[attr-defined]
+        self._known_para_ids = None  # type: ignore[attr-defined]
         self._mark(part_path)  # type: ignore[attr-defined]
         return {
             "part": part_path,
