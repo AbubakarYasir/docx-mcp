@@ -37,6 +37,11 @@ any Arabic text that is still missing direction markup.
 - **Book pages:** `set_book_layout(page_size="17x24", mirror_margins=True,
   rtl_binding=True)`, `design_header_footer` with `{STYLEREF:Chapter}`
   running heads and `{PAGE}`, `set_page_numbering`.
+- **Footnotes like a printed Arabic book:** `set_note_continuation(color=
+  "520912")` puts "=" at the foot of a page where a note carries over,
+  `set_note_separator("full", color="520912")`, `set_note_numbering(
+  restart="page")`, and `add_custom_mark_note(..., mark="[١]")` for a
+  narration number that carries its own takhrij note.
 - **Themes:** `set_theme_fonts`, `apply_color_palette("scholarly-maroon")`.
 
 ## How every change is checked

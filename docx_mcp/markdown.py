@@ -103,6 +103,8 @@ class MarkdownConverter:
         # Remove definitions (skip separators 0 and 1) with no body reference
         for fn in list(fn_tree.findall(f"{W}footnote")):
             fn_id = int(fn.get(f"{W}id", "0"))
+            if fn.get(f"{W}type") not in (None, "normal"):
+                continue  # separators / continuation notice
             if fn_id >= 2 and fn_id not in ref_ids:
                 fn_tree.remove(fn)
                 self._doc._mark("word/footnotes.xml")
