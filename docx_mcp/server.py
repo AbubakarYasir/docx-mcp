@@ -3727,6 +3727,128 @@ def set_page_border(
 
 
 @mcp.tool()
+def apply_book_preset(
+    preset: str = "tahqiq",
+    title: str | None = None,
+    author: str | None = None,
+    running_head: str = "title",
+    chapters_new_page: bool | None = None,
+    justify: str = "justify",
+    honorifics: bool = True,
+    note_continuation: bool = True,
+    page_numbers: str = "decimal",
+    title_page: bool = True,
+    overrides: dict | None = None,
+    document_handle: str = "",
+) -> str:
+    """Set up a whole Arabic/Urdu book in one call: page, margins, fonts, a
+    labelled style set (Title العنوان, Heading 1 باب, Heading 2 ترجمة,
+    Narration Number رقم الحديث, Prophetic Speech كلام النبي ﷺ, Matn, Isnad,
+    Quran, Separator فاصل, footnote text), running head (title | chapter |
+    title-chapter | none), "— page —" folio, maroon footnote rule with "="
+    continuation, honorific glyphs, fields refreshed on open. presets: tahqiq
+    (house style: Amiri 13 / Sakkal Majalla, 17×24, #520912, notes 9 pt on 15
+    pt), kitab (chapters on new pages), urdu-nastaliq. overrides: any preset
+    value, e.g. {"body_pt": 14}."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.apply_book_preset(
+            preset,
+            title=title,
+            author=author,
+            running_head=running_head,
+            chapters_new_page=chapters_new_page,
+            justify=justify,
+            honorifics=honorifics,
+            note_continuation=note_continuation,
+            page_numbers=page_numbers,
+            title_page=title_page,
+            overrides=overrides,
+        )
+    )
+
+
+@mcp.tool()
+def insert_separator(
+    after_para_id: str | None = None,
+    text: str = "❁ ❁ ❁",
+    ornament: str | None = None,
+    color: str = "520912",
+    document_handle: str = "",
+) -> str:
+    """Section separator after a paragraph: text (❁ ❁ ❁, ✽ ✽ ✽, ⁂) in the
+    Separator style, or a vector ornament ("divider", "divider-dots", "star8")."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.insert_separator(after_para_id, text=text, ornament=ornament, color=color))
+
+
+@mcp.tool()
+def restrict_formatting_to_styles(
+    allowed: list[str] | None = None,
+    enabled: bool = True,
+    block_theme_switching: bool = True,
+    document_handle: str = "",
+) -> str:
+    """Word's "Limit formatting to a selection of styles": hand formatting is
+    disabled so everyone uses the book's styles. allowed: names, ids or labels
+    to keep usable (default all document styles). No password; enabled=False
+    lifts it."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.restrict_formatting_to_styles(
+            allowed, enabled=enabled, block_theme_switching=block_theme_switching
+        )
+    )
+
+
+@mcp.tool()
+def set_style_pane(
+    show: str = "in-use",
+    sort: str = "priority",
+    alternate_names: bool = True,
+    document_handle: str = "",
+) -> str:
+    """Word's Styles pane: show in-use | recommended | all | custom | headings,
+    sort name | priority | font | based-on | type, and show style labels such as
+    «باب»."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.set_style_pane(show, sort=sort, alternate_names=alternate_names))
+
+
+@mcp.tool()
+def set_font_embedding(
+    embed: bool = True,
+    subset: bool = True,
+    include_system_fonts: bool = False,
+    document_handle: str = "",
+) -> str:
+    """Have Word embed the fonts (Amiri, Jameel Noori Nastaleeq …) on its next
+    save, so the book looks right on computers without them."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_font_embedding(embed, subset=subset, include_system_fonts=include_system_fonts)
+    )
+
+
+@mcp.tool()
+def hide_proofing_marks(hide: bool = True, document_handle: str = "") -> str:
+    """Hide spelling/grammar squiggles across Arabic and Urdu text."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.hide_proofing_marks(hide))
+
+
+@mcp.tool()
+def attach_template(
+    template_path: str, auto_update_styles: bool = True, document_handle: str = ""
+) -> str:
+    """Link a Word template (.dotx) on this computer; with auto_update_styles
+    Word copies the template's styles in on every open — one place to change
+    the house style of every book."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.attach_template(template_path, auto_update_styles=auto_update_styles))
+
+
+@mcp.tool()
 def set_update_fields_on_open(enabled: bool = True, document_handle: str = "") -> str:
     """Make Word refresh every field (TOC, index, page references, running heads) on open."""
     _, doc = _resolve(document_handle)

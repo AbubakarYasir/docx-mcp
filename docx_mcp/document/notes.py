@@ -391,6 +391,9 @@ class NotesDesignMixin:
         path, tag, _ = _kind_parts(kind)
         root = self._require(path)
         doc = self._require("word/document.xml")
+        mark_in_body = self._resolve_style_props(mark_in_body)
+        mark_in_note = self._resolve_style_props(mark_in_note)
+        note_text_props = self._resolve_style_props(note_text_props)
         para = self._find_para(doc, para_id)
         if para is None:
             raise ValueError(f"Paragraph '{para_id}' not found")

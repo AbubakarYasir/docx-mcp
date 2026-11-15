@@ -23,6 +23,7 @@ from .base import (
     _preserve,
 )
 from .bidi import BidiMixin
+from .bookdesign import BookDesignMixin
 from .bookmarks import BookmarksMixin
 from .captions import CaptionMixin
 from .changesummary import ChangeSummaryMixin
@@ -94,6 +95,7 @@ class DocxDocument(
     NotesDesignMixin,
     IndexingMixin,
     VectorArtMixin,
+    BookDesignMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,

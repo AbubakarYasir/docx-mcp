@@ -131,6 +131,54 @@ class StylesMixin:
                 return s
         return None
 
+    def _style_id_for(self, name_or_id: str | None, style_type: str | None = None) -> str | None:
+        """The styleId to write for a style given by id, name or label.
+
+        Word links pStyle/rStyle by styleId only; writing a display name such
+        as "Heading 1" (id "Heading1") silently falls back to Normal. Labels
+        (w:aliases, e.g. «باب») are accepted too. Unknown values pass through.
+        """
+        if not name_or_id:
+            return name_or_id
+        tree = self._tree("word/styles.xml")
+        if tree is None:
+            return name_or_id
+        lo = name_or_id.strip().lower()
+        candidates = tree.findall(f"{W}style")
+        if style_type:
+            typed = [c for c in candidates if c.get(f"{W}type") == style_type]
+            candidates = typed + [c for c in candidates if c not in typed]
+        for match in (
+            lambda s: (s.get(f"{W}styleId") or "").lower() == lo,
+            lambda s: (
+                s.find(f"{W}name") is not None
+                and (s.find(f"{W}name").get(f"{W}val") or "").lower() == lo
+            ),
+            lambda s: (
+                s.find(f"{W}aliases") is not None
+                and lo
+                in [
+                    a.strip().lower()
+                    for a in (s.find(f"{W}aliases").get(f"{W}val") or "").split(",")
+                ]
+            ),
+        ):
+            for s in candidates:
+                if match(s):
+                    return s.get(f"{W}styleId")
+        return name_or_id
+
+    def _resolve_style_props(self, props: dict | None) -> dict | None:
+        """Map style/char_style values in a props dict to real style ids."""
+        if not props:
+            return props
+        out = dict(props)
+        if out.get("char_style"):
+            out["char_style"] = self._style_id_for(out["char_style"], "character")
+        if out.get("style"):
+            out["style"] = self._style_id_for(out["style"], "paragraph")
+        return out
+
     # ── extended style API ────────────────────────────────────────────────────
 
     def get_style(self, name_or_id: str) -> dict:

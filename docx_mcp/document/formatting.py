@@ -127,7 +127,7 @@ class FormattingMixin:
         if style is not None:
             ppr = etree.SubElement(new_p, f"{W}pPr")
             ps = etree.SubElement(ppr, f"{W}pStyle")
-            ps.set(f"{W}val", style)
+            ps.set(f"{W}val", self._style_id_for(style, "paragraph"))
 
         run = etree.SubElement(new_p, f"{W}r")
         t_el = etree.SubElement(run, f"{W}t")
@@ -196,7 +196,7 @@ class FormattingMixin:
             if pstyle is None:
                 pstyle = etree.Element(f"{W}pStyle")
                 ppr.insert(0, pstyle)
-            pstyle.set(f"{W}val", style)
+            pstyle.set(f"{W}val", self._style_id_for(style, "paragraph"))
 
         if text is not None or style is not None:
             self._mark("word/document.xml")

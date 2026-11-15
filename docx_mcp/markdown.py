@@ -117,7 +117,8 @@ class MarkdownConverter:
         if style:
             ppr = etree.SubElement(p, f"{W}pPr")
             ps = etree.SubElement(ppr, f"{W}pStyle")
-            ps.set(f"{W}val", style)
+            resolve = getattr(self._doc, "_style_id_for", None)
+            ps.set(f"{W}val", resolve(style, "paragraph") if resolve else style)
         return p
 
     def _make_run(

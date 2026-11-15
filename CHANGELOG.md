@@ -4,6 +4,33 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: whole-book presets and Word power features
+
+- `apply_book_preset`: a scholarly book in one call — `tahqiq` (house style:
+  17×24, Amiri 13 / Sakkal Majalla, maroon #520912, chapter headings between
+  double rules, footnotes 9 pt on exact 15 pt lines), `kitab` (chapters on new
+  pages) and `urdu-nastaliq` (Jameel Noori Nastaleeq). Creates a labelled
+  style set (Title العنوان, Heading 1 باب, Heading 2 ترجمة, Narration Number
+  رقم الحديث, Prophetic Speech كلام النبي ﷺ, Matn, Isnad, Quran, Separator
+  فاصل, footnote text الحاشية), running heads (title, chapter via STYLEREF,
+  or title on even / chapter on odd), "— page —" folio, a title page without
+  head or folio, footnote rule and "=" continuation, honorific glyphs.
+- `insert_separator`: ❁ ❁ ❁ in the Separator style, or a vector ornament.
+- `restrict_formatting_to_styles`: Word's "Limit formatting to a selection of
+  styles" (no password), so a book is edited with styles only.
+- `set_style_pane`: Styles pane shows styles in use / recommended / all, by
+  priority or name, with the Arabic labels.
+- `set_font_embedding`, `hide_proofing_marks`, `attach_template` (styles
+  update from a .dotx every time the document opens).
+
+### Fixed
+
+- Style names and labels now work everywhere a style is given: "Heading 1",
+  "heading 1" or «باب» are written as the style's id. Before, a display name
+  was written as-is and Word silently showed Normal (also breaking STYLEREF
+  running heads and the TOC). Affects insert_paragraph, update_paragraph,
+  markdown, rich text, format_matches and custom note marks.
+
 ### Added: vector art
 
 - `insert_svg`: SVG artwork as a native vector picture (sharp at any zoom and

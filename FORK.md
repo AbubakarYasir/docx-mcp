@@ -24,6 +24,14 @@ any Arabic text that is still missing direction markup.
 
 ## Designing documents
 
+- **A whole book in one call:** `apply_book_preset("tahqiq", title="…",
+  running_head="title-chapter")` sets page, fonts, a labelled style set,
+  running heads, folio, footnote design and honorifics. Then write with
+  styles: «باب» for chapters, «ترجمة» for sections, «رقم الحديث» for [١],
+  «كلام النبي ﷺ» for the Prophet's words, `insert_separator` for ❁ ❁ ❁.
+- **Keep it consistent:** `restrict_formatting_to_styles()` turns off hand
+  formatting in Word; `set_style_pane("in-use")` keeps the Styles pane short.
+
 - **Styles first.** `define_style` builds complete styles (Arabic and Latin
   fonts, kashida justification, borders, spacing, labels in Arabic or
   English); `apply_style_where` applies them by pattern; `style_report` shows
