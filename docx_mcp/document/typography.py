@@ -151,10 +151,10 @@ class TypographyMixin:
         part, anchor = self._find_para_any(after_para_id)
         runs = []
         for span in spans:
-            span = dict(span)
+            span = self._resolve_style_props(dict(span))
             text = str(span.pop("text", ""))
             runs.extend(content_runs(text, span or None))
-        p = make_paragraph(self._new_para_id(), paragraph, runs)
+        p = make_paragraph(self._new_para_id(), self._resolve_style_props(paragraph), runs)
         anchor.addnext(p)
         self._mark(part)
         return {"para_id": p.get(f"{W14}paraId"), "runs": len(runs), "part": part}
@@ -164,7 +164,7 @@ class TypographyMixin:
         part, p = self._find_para_any(para_id)
         n = 0
         for span in spans:
-            span = dict(span)
+            span = self._resolve_style_props(dict(span))
             text = str(span.pop("text", ""))
             for r in content_runs(text, span or None):
                 p.append(r)
@@ -200,6 +200,7 @@ class TypographyMixin:
         if whole_word:
             rx_src = rf"(?<!\w)(?:{rx_src})(?!\w)"
         rx = re.compile(rx_src)
+        run_props = self._resolve_style_props(run_props)
         prefixes = (
             ("word/document.xml",)
             if parts == "body"
