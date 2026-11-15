@@ -133,45 +133,32 @@ class RevisionsMixin:
         return {"track_changes": enabled, "author": author}
 
     def accept_change(self, change_id: int) -> dict:
-        doc = self._require("word/document.xml")
-        el = _find_change(doc, change_id)
-        if el is None:
-            raise ValueError(f"No tracked change with id={change_id}")
-        if el.tag == f"{W}ins":
-            _unwrap(el)
-            kind = "insertion"
-        else:
-            el.getparent().remove(el)
-            kind = "deletion"
-        self._mark("word/document.xml")
+        kind = self._change_kind(change_id)
+        count, parts = resolve_all(self._trees, accept=True, change_id=change_id)
+        for p in parts:
+            self._mark(p)
         return {"change_id": change_id, "action": "accepted", "type": kind}
 
+    def _change_kind(self, change_id: int) -> str:
+        id_str = str(change_id)
+        for part in _story_parts(self._trees):
+            root = self._trees[part]
+            for el in root.iter(f"{W}ins", f"{W}del"):
+                if el.get(f"{W}id") == id_str:
+                    return "insertion" if el.tag == f"{W}ins" else "deletion"
+        raise ValueError(f"No tracked change with id={change_id}")
+
     def reject_change(self, change_id: int) -> dict:
-        doc = self._require("word/document.xml")
-        el = _find_change(doc, change_id)
-        if el is None:
-            raise ValueError(f"No tracked change with id={change_id}")
-        if el.tag == f"{W}ins":
-            el.getparent().remove(el)
-            kind = "insertion"
-        else:
-            _unwrap_del(el)
-            kind = "deletion"
-        self._mark("word/document.xml")
+        kind = self._change_kind(change_id)
+        count, parts = resolve_all(self._trees, accept=False, change_id=change_id)
+        for p in parts:
+            self._mark(p)
         return {"change_id": change_id, "action": "rejected", "type": kind}
 
     def accept_all_changes(self) -> dict:
-        doc = self._require("word/document.xml")
-        elements = list(doc.iter(f"{W}ins")) + list(doc.iter(f"{W}del"))
-        count = 0
-        for el in elements:
-            if el.tag == f"{W}ins":
-                _unwrap(el)
-            else:
-                el.getparent().remove(el)
-            count += 1
-        if count:
-            self._mark("word/document.xml")
+        count, parts = resolve_all(self._trees, accept=True)
+        for p in parts:
+            self._mark(p)
         return {"accepted": count}
 
     def flatten_document(self) -> dict:
@@ -204,15 +191,9 @@ class RevisionsMixin:
         }
 
     def reject_all_changes(self) -> dict:
-        doc = self._require("word/document.xml")
-        elements = list(doc.iter(f"{W}ins")) + list(doc.iter(f"{W}del"))
-        count = 0
-        for el in elements:
-            if el.tag == f"{W}ins":
-                el.getparent().remove(el)
-            else:
-                _unwrap_del(el)
-            count += 1
+        count, parts = resolve_all(self._trees, accept=False)
+        for p in parts:
+            self._mark(p)
         return {"rejected": count}
 
 
@@ -251,3 +232,133 @@ def _int_id(val: str | None) -> int:
         return int(val or 0)
     except (ValueError, TypeError):
         return 0
+
+
+# ── Unified revision resolution ─────────────────────────────────────────────
+
+_STORY_PREFIXES = (
+    "word/document.xml",
+    "word/footnotes.xml",
+    "word/endnotes.xml",
+    "word/header",
+    "word/footer",
+)
+
+
+def _story_parts(trees: dict) -> list[str]:
+    return [p for p in trees if p.startswith(_STORY_PREFIXES) and p.endswith(".xml")]
+
+
+def _kind(el) -> str:
+    """Classify a w:ins / w:del by where it sits.
+
+    'row'  : row insertion/deletion (inside w:trPr)
+    'mark' : paragraph-mark insertion/deletion (inside w:pPr/w:rPr)
+    'inline': wraps runs (the common case)
+    'other': a property-level marker we only strip
+    """
+    parent = el.getparent()
+    if parent is None:
+        return "other"
+    if parent.tag == f"{W}trPr":
+        return "row"
+    if parent.tag == f"{W}rPr":
+        gp = parent.getparent()
+        if gp is not None and gp.tag == f"{W}pPr":
+            return "mark"
+        return "other"
+    return "inline"
+
+
+def _merge_with_next(para) -> None:
+    """Join a paragraph with the next one (its paragraph mark goes away)."""
+    nxt = para.getnext()
+    if nxt is None or nxt.tag != f"{W}p":
+        return
+    content = [c for c in para if c.tag != f"{W}pPr"]
+    anchor = nxt.find(f"{W}pPr")
+    idx = 0 if anchor is None else list(nxt).index(anchor) + 1
+    for i, c in enumerate(content):
+        nxt.insert(idx + i, c)
+    para.getparent().remove(para)
+
+
+def _para_has_content(para) -> bool:
+    return any(c.tag != f"{W}pPr" for c in para)
+
+
+def _remove_row(tr) -> None:
+    tbl = tr.getparent()
+    tbl.remove(tr)
+    if tbl.tag == f"{W}tbl" and tbl.find(f"{W}tr") is None and tbl.getparent() is not None:
+        tbl.getparent().remove(tbl)
+
+
+def resolve_revision(el, accept: bool) -> None:
+    """Accept or reject one w:ins / w:del, whatever it is attached to."""
+    if el.getparent() is None:
+        return
+    is_ins = el.tag == f"{W}ins"
+    kind = _kind(el)
+    if kind == "inline":
+        if is_ins:
+            _unwrap(el) if accept else el.getparent().remove(el)
+        else:
+            el.getparent().remove(el) if accept else _unwrap_del(el)
+        return
+    parent = el.getparent()
+    parent.remove(el)
+    if kind == "row":
+        tr = parent.getparent()
+        drop_row = (is_ins and not accept) or (not is_ins and accept)
+        if drop_row and tr is not None and tr.getparent() is not None:
+            _remove_row(tr)
+        return
+    if kind == "mark":
+        ppr = parent.getparent()
+        para = ppr.getparent() if ppr is not None else None
+        if len(parent) == 0 and not parent.attrib:
+            ppr.remove(parent)
+        if para is None or para.getparent() is None:
+            return
+        if (is_ins and not accept) or (not is_ins and accept):
+            if not _para_has_content(para) and para.getnext() is not None:
+                para.getparent().remove(para)
+            else:
+                _merge_with_next(para)
+
+
+def resolve_all(
+    trees: dict, accept: bool, author: str | None = None, change_id: int | None = None
+) -> tuple[int, list[str]]:
+    """Resolve matching revisions in every story part.
+
+    Inline changes are handled first, then paragraph marks, then table rows,
+    so merges and row removals see already-resolved content.
+    Returns (count, modified_parts).
+    """
+    count = 0
+    modified: list[str] = []
+    id_str = None if change_id is None else str(change_id)
+    for part in _story_parts(trees):
+        root = trees[part]
+        if root is None:
+            continue
+        found = [
+            el
+            for el in root.iter(f"{W}ins", f"{W}del")
+            if (author is None or el.get(f"{W}author") == author)
+            and (id_str is None or el.get(f"{W}id") == id_str)
+        ]
+        if not found:
+            continue
+        order = {"inline": 0, "other": 0, "mark": 1, "row": 2}
+        found.sort(key=lambda e: order[_kind(e)])
+        # Inline revisions nested inside another matching revision go with it.
+        for el in found:
+            if el.getparent() is None:
+                continue
+            resolve_revision(el, accept)
+            count += 1
+        modified.append(part)
+    return count, modified

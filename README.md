@@ -1,5 +1,7 @@
 # docx-mcp
 
+> **Fork:** maintained fork with fixes for Word compatibility and Arabic / right-to-left support. See [FORK.md](FORK.md) and [CHANGELOG.md](CHANGELOG.md).
+
 [![PyPI](https://img.shields.io/pypi/v/docx-mcp-server?color=blue)](https://pypi.org/project/docx-mcp-server/)
 [![Python](https://img.shields.io/pypi/pyversions/docx-mcp-server)](https://pypi.org/project/docx-mcp-server/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)

@@ -784,59 +784,30 @@ class TracksMixin:
         return el.get(f"{W}author") == author
 
     def accept_changes(self, *, author: str | None = None) -> dict:
-        """Accept tracked changes: keep insertions, remove deletions."""
-        doc = self._require("word/document.xml")
-        count = 0
+        """Accept tracked changes: keep insertions, remove deletions.
 
-        for ins in list(doc.iter(f"{W}ins")):
-            if not self._matches_author(ins, author):
-                continue
-            parent = ins.getparent()
-            idx = list(parent).index(ins)
-            for child in list(ins):
-                ins.remove(child)
-                parent.insert(idx, child)
-                idx += 1
-            parent.remove(ins)
-            count += 1
+        Covers text, paragraph breaks and table rows in the body, footnotes,
+        endnotes, headers and footers.
+        """
+        from .revisions import resolve_all
 
-        for del_el in list(doc.iter(f"{W}del")):
-            if not self._matches_author(del_el, author):
-                continue
-            del_el.getparent().remove(del_el)
-            count += 1
-
-        if count > 0:
-            self._mark("word/document.xml")
+        count, parts = resolve_all(self._trees, accept=True, author=author)
+        for p in parts:
+            self._mark(p)
         return {"accepted": count, "scope": "by_author" if author else "all"}
 
     def reject_changes(self, *, author: str | None = None) -> dict:
-        """Reject tracked changes: remove insertions, restore deletions."""
-        doc = self._require("word/document.xml")
-        count = 0
+        """Reject tracked changes: remove insertions, restore deletions.
 
-        for ins in list(doc.iter(f"{W}ins")):
-            if not self._matches_author(ins, author):
-                continue
-            ins.getparent().remove(ins)
-            count += 1
+        Rejecting an inserted paragraph joins it back with the next one;
+        rejecting an inserted table row removes the row (and the table once
+        it has no rows left).
+        """
+        from .revisions import resolve_all
 
-        for del_el in list(doc.iter(f"{W}del")):
-            if not self._matches_author(del_el, author):
-                continue
-            parent = del_el.getparent()
-            idx = list(parent).index(del_el)
-            for child in list(del_el):
-                for dt in child.findall(f"{W}delText"):
-                    dt.tag = f"{W}t"
-                del_el.remove(child)
-                parent.insert(idx, child)
-                idx += 1
-            parent.remove(del_el)
-            count += 1
-
-        if count > 0:
-            self._mark("word/document.xml")
+        count, parts = resolve_all(self._trees, accept=False, author=author)
+        for p in parts:
+            self._mark(p)
         return {"rejected": count, "scope": "by_author" if author else "all"}
 
     def get_body_text(self) -> dict:

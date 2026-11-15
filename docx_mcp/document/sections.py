@@ -125,6 +125,15 @@ class SectionsMixin:
                 pg_sz.set(f"{W}h", str(height))
             if orientation is not None:
                 pg_sz.set(f"{W}orient", orientation)
+                # Word expects width > height for landscape and the reverse for
+                # portrait; swap when only the orientation was given.
+                if width is None and height is None:
+                    w_cur = int(pg_sz.get(f"{W}w") or 11906)
+                    h_cur = int(pg_sz.get(f"{W}h") or 16838)
+                    if (orientation == "landscape") == (w_cur < h_cur):
+                        w_cur, h_cur = h_cur, w_cur
+                    pg_sz.set(f"{W}w", str(w_cur))
+                    pg_sz.set(f"{W}h", str(h_cur))
 
         # Margins
         margin_vals = {
@@ -417,6 +426,8 @@ class SectionsMixin:
         doc = self._require("word/document.xml")
         body = doc.find(f"{W}body")
         sectprs = self._collect_sectprs(body)
+        if len(sectprs) == 0:
+            sectprs = [(etree.SubElement(body, f"{W}sectPr"), True)]
         if section_index < 0 or section_index >= len(sectprs):
             raise ValueError(f"section_index {section_index} out of range (0..{len(sectprs) - 1})")
         sect_pr, _ = sectprs[section_index]

@@ -15,7 +15,10 @@ import json
 import sys as _sys
 import uuid
 
-from mcp.server.fastmcp import FastMCP
+try:  # mcp >= 2.0 renamed FastMCP to MCPServer
+    from mcp.server.mcpserver import MCPServer as FastMCP
+except ImportError:  # mcp 1.x
+    from mcp.server.fastmcp import FastMCP
 
 from docx_mcp.document import DocxDocument
 
@@ -677,13 +680,23 @@ def get_images(document_handle: str = "") -> str:
 def insert_image(
     para_id: str,
     image_path: str,
-    width_emu: int = 2000000,
-    height_emu: int = 2000000,
+    width_emu: int = 0,
+    height_emu: int = 0,
+    alt_text: str = "",
     document_handle: str = "",
 ) -> str:
-    """Insert an image into the document after a paragraph."""
+    """Insert an inline image in a new paragraph after a paragraph.
+
+    Sizes are in EMU (360000 = 1 cm, 914400 = 1 inch). Leave both at 0 for the
+    image's native size (scaled to fit a 16 cm text width); give only one and
+    the other keeps the aspect ratio. alt_text is read by screen readers.
+    """
     _, doc = _resolve(document_handle)
-    return _js(doc.insert_image(para_id, image_path, width_emu=width_emu, height_emu=height_emu))
+    return _js(
+        doc.insert_image(
+            para_id, image_path, width_emu=width_emu, height_emu=height_emu, alt_text=alt_text
+        )
+    )
 
 
 @mcp.tool()
