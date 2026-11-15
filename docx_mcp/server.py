@@ -2905,6 +2905,273 @@ def set_table_direction(table_idx: int, direction: str = "rtl", document_handle:
     return _js(doc.set_table_direction(table_idx, direction))
 
 
+# ── Styles, typography, honorifics, themes ───────────────────────────────────
+
+
+@mcp.tool()
+def define_style(
+    name: str,
+    style_type: str = "paragraph",
+    based_on: str | None = None,
+    next_style: str | None = None,
+    linked_style: str | None = None,
+    aliases: list[str] | None = None,
+    gallery: bool | None = None,
+    ui_priority: int | None = None,
+    hidden: bool | None = None,
+    run: dict | None = None,
+    paragraph: dict | None = None,
+    replace_formatting: bool = False,
+    document_handle: str = "",
+) -> str:
+    """Create a complete style, or update it if it exists (by name, id or alias).
+
+    Use styles instead of formatting paragraphs one by one: change the style
+    once and every paragraph using it follows.
+
+    run keys: font (all scripts), latin_font, cs_font (Arabic/Hebrew), size_pt,
+      cs_size_pt, bold, italic, underline, strike, color, highlight, shading,
+      caps, small_caps, spacing_pt, position_pt, rtl, language, cs_language, hidden.
+    paragraph keys: alignment (start|end|center|justify|kashida|kashida-low|
+      kashida-high|distribute), direction (rtl|ltr), space_before_pt,
+      space_after_pt, line_spacing (multiple), line_exact_pt, line_at_least_pt,
+      indent_start_cm, indent_end_cm, first_line_cm, hanging_cm, keep_with_next,
+      keep_together, page_break_before, widow_control, outline_level (0=H1),
+      border_top/border_bottom/border_start/border_end ({style: single|double|
+      thick|dotted|dashed, color, size_pt, space_pt}), shading, tabs
+      ([{pos_cm, align, leader}]), suppress_hyphenation.
+    aliases: labels shown in Word's style list, e.g. ["متن", "Body"].
+    gallery: show in Home ▸ Styles. ui_priority: order (lower first).
+    """
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.define_style(
+            name,
+            style_type,
+            based_on=based_on,
+            next_style=next_style,
+            linked_style=linked_style,
+            aliases=aliases,
+            gallery=gallery,
+            ui_priority=ui_priority,
+            hidden=hidden,
+            run=run,
+            paragraph=paragraph,
+            replace_formatting=replace_formatting,
+        )
+    )
+
+
+@mcp.tool()
+def rename_style(
+    name_or_id: str, new_name: str, new_id: bool = False, document_handle: str = ""
+) -> str:
+    """Rename a style; with new_id=True also change its id and every reference to it."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.rename_style(name_or_id, new_name, new_id=new_id))
+
+
+@mcp.tool()
+def organize_styles(
+    order: list[str] | None = None,
+    hide_unused: bool = False,
+    keep_visible: list[str] | None = None,
+    gallery_only: list[str] | None = None,
+    document_handle: str = "",
+) -> str:
+    """Order Word's style gallery and hide unused styles (they reappear when used)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.organize_styles(
+            order, hide_unused=hide_unused, keep_visible=keep_visible, gallery_only=gallery_only
+        )
+    )
+
+
+@mcp.tool()
+def style_report(document_handle: str = "") -> str:
+    """Style usage, unused styles, and repeated direct formatting that should be a style."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.style_report())
+
+
+@mcp.tool()
+def apply_style_where(
+    style: str,
+    text_regex: str | None = None,
+    current_style: str | None = None,
+    para_ids: list[str] | None = None,
+    clear_direct: bool = False,
+    document_handle: str = "",
+) -> str:
+    r"""Apply a style to every match. Paragraph style: paragraphs matching text_regex
+    / current_style / para_ids. Character style: text matching text_regex
+    (e.g. r"«[^»]+»" for quotations, r"\\[[٠-٩0-9]+\\]" for narration numbers)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.apply_style_where(
+            style,
+            text_regex=text_regex,
+            current_style=current_style,
+            para_ids=para_ids,
+            clear_direct=clear_direct,
+        )
+    )
+
+
+@mcp.tool()
+def clear_direct_formatting(
+    para_ids: list[str] | None = None, keep: list[str] | None = None, document_handle: str = ""
+) -> str:
+    """Remove hand formatting so styles take over. keep: run properties to keep, e.g. ["b","color"]."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.clear_direct_formatting(para_ids, keep=keep))
+
+
+@mcp.tool()
+def insert_rich_paragraph(
+    after_para_id: str,
+    spans: list[dict],
+    paragraph: dict | None = None,
+    document_handle: str = "",
+) -> str:
+    """Insert a paragraph made of spans with different fonts, sizes and colours.
+
+    spans: [{"text": "...", "font"|"latin_font"|"cs_font": ..., "size_pt": ...,
+    "bold": ..., "color": "520912", "char_style": ..., ...}]. Text may hold
+    {PAGE}, {NUMPAGES}, {STYLEREF:Heading 1}, {FIELD:...}, tabs and newlines.
+    paragraph: style/alignment/direction/spacing/indent/border keys (see define_style).
+    """
+    _, doc = _resolve(document_handle)
+    return _js(doc.insert_rich_paragraph(after_para_id, spans, paragraph=paragraph))
+
+
+@mcp.tool()
+def append_rich_text(para_id: str, spans: list[dict], document_handle: str = "") -> str:
+    """Append formatted spans (own fonts/colours each) to the end of a paragraph."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.append_rich_text(para_id, spans))
+
+
+@mcp.tool()
+def format_matches(
+    pattern: str,
+    regex: bool = False,
+    whole_word: bool = False,
+    parts: str = "all",
+    font: str | None = None,
+    latin_font: str | None = None,
+    cs_font: str | None = None,
+    size_pt: float | None = None,
+    bold: bool | None = None,
+    italic: bool | None = None,
+    underline: str | None = None,
+    color: str | None = None,
+    highlight: str | None = None,
+    shading: str | None = None,
+    char_style: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Format every occurrence of a text or regex across body, notes, headers, footers.
+
+    E.g. every ﴿…﴾ verse in a Quran font (pattern "﴿[^﴾]+﴾", regex=True,
+    cs_font="Amiri Quran"), every «…» bold, every name in a colour.
+    """
+    _, doc = _resolve(document_handle)
+    props = {
+        k: v
+        for k, v in dict(
+            font=font,
+            latin_font=latin_font,
+            cs_font=cs_font,
+            size_pt=size_pt,
+            bold=bold,
+            italic=italic,
+            underline=underline,
+            color=color,
+            highlight=highlight,
+            shading=shading,
+            char_style=char_style,
+        ).items()
+        if v is not None
+    }
+    return _js(
+        doc.format_matches(pattern, regex=regex, whole_word=whole_word, parts=parts, **props)
+    )
+
+
+@mcp.tool()
+def list_honorifics(document_handle: str = "") -> str:
+    """Honorific ligature glyphs (ﷺ ﵁ ﵀ ﷻ …), the phrases and abbreviations they replace."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.list_honorifics())
+
+
+@mcp.tool()
+def apply_honorifics(
+    font: str = "Scheherazade New",
+    color: str | None = None,
+    size_pt: float | None = None,
+    bold: bool | None = None,
+    include_abbreviations: bool = True,
+    only: list[str] | None = None,
+    restyle_existing: bool = True,
+    parts: str = "all",
+    document_handle: str = "",
+) -> str:
+    """Replace honorific phrases (صلى الله عليه وسلم, رضي الله عنه/عنها/عنهم/عنهما,
+    رحمه الله, عليه السلام, عز وجل, جل جلاله …) and bracketed abbreviations
+    ((ص), (رض), (رح), (ع)) with their full Unicode glyphs, in a font that draws
+    them, with an optional colour and size. Tashkeel and spelling variants match.
+
+    font: Scheherazade New or Noto Naskh Arabic draw every glyph; Amiri,
+    Traditional Arabic and Sakkal Majalla only draw ﷺ.
+    """
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.apply_honorifics(
+            font=font,
+            color=color,
+            size_pt=size_pt,
+            bold=bold,
+            include_abbreviations=include_abbreviations,
+            only=only,
+            restyle_existing=restyle_existing,
+            parts=parts,
+        )
+    )
+
+
+@mcp.tool()
+def set_theme_fonts(
+    heading_latin: str | None = None,
+    body_latin: str | None = None,
+    heading_arabic: str | None = None,
+    body_arabic: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Set theme heading/body fonts (Latin and Arabic). Styles using theme fonts follow."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_theme_fonts(
+            heading_latin=heading_latin,
+            body_latin=body_latin,
+            heading_arabic=heading_arabic,
+            body_arabic=body_arabic,
+        )
+    )
+
+
+@mcp.tool()
+def apply_color_palette(
+    palette: str | None = None, colors: dict | None = None, document_handle: str = ""
+) -> str:
+    """Set theme colours: palette scholarly-maroon | emerald-gold | midnight-ink |
+    manuscript, and/or explicit slots {accent1: "520912", ...}."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.apply_color_palette(palette, colors))
+
+
 @mcp.tool()
 def get_direction_report(document_handle: str = "") -> str:
     """Report right-to-left status: RTL paragraphs, sections and tables, and any

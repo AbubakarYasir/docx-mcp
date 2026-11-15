@@ -416,7 +416,8 @@ class BaseMixin:
                 if rel.get("TargetMode") == "External":
                     continue
                 target = rel.get("Target", "")
-                if target and not (self.workdir / "word" / target).exists():
+                pending = f"word/{target}" in self._trees or f"word/{target}" in self._binaries
+                if target and not pending and not (self.workdir / "word" / target).exists():
                     rels_tree.remove(rel)
                     repairs["broken_rels_removed"] += 1
             if repairs["broken_rels_removed"]:

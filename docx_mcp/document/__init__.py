@@ -38,6 +38,7 @@ from .fields import FieldsMixin
 from .footnotes import FootnotesMixin
 from .formatting import FormattingMixin
 from .headers_footers import HeadersFootersMixin
+from .honorifics import HonorificsMixin
 from .hyperlinks import HyperlinksMixin
 from .images import ImagesMixin
 from .lists import ListsMixin
@@ -59,6 +60,7 @@ from .sections import SectionsMixin
 from .sessionlog import SessionLogMixin
 from .splitting import SplittingMixin
 from .statistics import StatisticsMixin
+from .styledesign import StyleDesignMixin
 from .styles import StylesMixin
 from .tables import TablesMixin
 from .template import TemplateMixin
@@ -66,6 +68,7 @@ from .textboxes import TextBoxesMixin
 from .theme import ThemeMixin
 from .toc import TocMixin
 from .tracks import TracksMixin
+from .typography import TypographyMixin
 from .validation import ValidationMixin
 from .watermark import WatermarkMixin
 
@@ -80,6 +83,9 @@ class DocxDocument(
     RevisionsMixin,
     FormattingMixin,
     BidiMixin,
+    StyleDesignMixin,
+    TypographyMixin,
+    HonorificsMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,
