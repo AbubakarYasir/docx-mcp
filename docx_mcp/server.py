@@ -3451,6 +3451,166 @@ def convert_notes(
 
 
 @mcp.tool()
+def mark_index_entries(
+    terms: list,
+    index_type: str | None = None,
+    whole_word: bool = True,
+    first_per_paragraph: bool = True,
+    parts: str = "body",
+    document_handle: str = "",
+) -> str:
+    """Mark every occurrence of terms as index entries (real XE fields, so
+    Word's Update Index rebuilds page numbers). terms: strings, or dicts with
+    text, regex, entry (index wording), subentry ("main:sub"), see ("انظر …"),
+    bold_page, italic_page, index_type. index_type: one letter for a separate
+    index, e.g. "P" أعلام, "L" أماكن, "H" أطراف. Arabic proclitics (و ف ب ل ك)
+    before a word still match. parts: body or all (with notes)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.mark_index_entries(
+            terms,
+            index_type=index_type,
+            whole_word=whole_word,
+            first_per_paragraph=first_per_paragraph,
+            parts=parts,
+        )
+    )
+
+
+@mcp.tool()
+def mark_index_entry(
+    para_id: str,
+    entry: str,
+    subentry: str | None = None,
+    see: str | None = None,
+    after_text: str | None = None,
+    index_type: str | None = None,
+    bold_page: bool = False,
+    italic_page: bool = False,
+    document_handle: str = "",
+) -> str:
+    """Mark one index entry in a paragraph (at its end, or right after
+    after_text)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.mark_index_entry(
+            para_id,
+            entry,
+            subentry=subentry,
+            see=see,
+            after_text=after_text,
+            index_type=index_type,
+            bold_page=bold_page,
+            italic_page=italic_page,
+        )
+    )
+
+
+@mcp.tool()
+def list_index_entries(index_type: str | None = None, document_handle: str = "") -> str:
+    """All index marks, grouped and sorted (Arabic-aware), with counts."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.list_index_entries(index_type))
+
+
+@mcp.tool()
+def remove_index_entries(
+    entry: str | None = None, index_type: str | None = None, document_handle: str = ""
+) -> str:
+    """Delete index marks: all, one entry, or one index type."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.remove_index_entries(entry, index_type))
+
+
+@mcp.tool()
+def insert_index(
+    after_para_id: str | None = None,
+    title: str | None = None,
+    index_type: str | None = None,
+    columns: int = 2,
+    letter_headings: bool = True,
+    right_align_page_numbers: bool = True,
+    leader: str = "dot",
+    run_in: bool = False,
+    language: str = "ar",
+    font: str | None = None,
+    cs_font: str | None = None,
+    size_pt: float | None = None,
+    heading_color: str | None = None,
+    new_page: bool = True,
+    update_on_open: bool = True,
+    document_handle: str = "",
+) -> str:
+    """Insert an index (فهرس) from the marks: title, one index type, 1–4
+    columns, letter headings, dotted leaders to right-aligned page numbers,
+    Arabic sorting (language ar/en/ur/fa), heading colour. Default: end of the
+    document, on a new page; Word fills page numbers on open."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_index(
+            after_para_id=after_para_id,
+            title=title,
+            index_type=index_type,
+            columns=columns,
+            letter_headings=letter_headings,
+            right_align_page_numbers=right_align_page_numbers,
+            leader=leader,
+            run_in=run_in,
+            language=language,
+            font=font,
+            cs_font=cs_font,
+            size_pt=size_pt,
+            heading_color=heading_color,
+            new_page=new_page,
+            update_on_open=update_on_open,
+        )
+    )
+
+
+@mcp.tool()
+def insert_toc(
+    after_para_id: str | None = None,
+    title: str | None = None,
+    levels: str | None = "1-3",
+    styles: dict | None = None,
+    hyperlinks: bool = True,
+    leader: str = "dot",
+    page_numbers: bool = True,
+    font: str | None = None,
+    cs_font: str | None = None,
+    size_pt: float | None = None,
+    level1_bold: bool = True,
+    level1_color: str | None = None,
+    new_page: bool = True,
+    update_on_open: bool = True,
+    document_handle: str = "",
+) -> str:
+    """Table of contents (فهرس الموضوعات) from heading levels and/or your own
+    styles, e.g. styles={"Chapter": 1, "Bab": 2}, levels=None. Clickable
+    entries, dotted leaders, coloured first level. Default: end of the
+    document (pass after_para_id to place it at the front)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_toc(
+            after_para_id=after_para_id,
+            title=title,
+            levels=levels,
+            styles=styles,
+            hyperlinks=hyperlinks,
+            leader=leader,
+            page_numbers=page_numbers,
+            font=font,
+            cs_font=cs_font,
+            size_pt=size_pt,
+            level1_bold=level1_bold,
+            level1_color=level1_color,
+            new_page=new_page,
+            update_on_open=update_on_open,
+        )
+    )
+
+
+@mcp.tool()
 def set_update_fields_on_open(enabled: bool = True, document_handle: str = "") -> str:
     """Make Word refresh every field (TOC, index, page references, running heads) on open."""
     _, doc = _resolve(document_handle)

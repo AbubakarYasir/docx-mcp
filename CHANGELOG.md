@@ -4,6 +4,24 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: indexes and tables of contents
+
+- `mark_index_entries`: marks every occurrence of names, places or phrases as
+  real index entries (XE fields), so Word's Update Index always has correct
+  pages. Arabic-aware: «والبخاري» and «بمكة» are filed under البخاري and مكة.
+  Sub-entries, "انظر" cross-references, bold/italic page numbers for the main
+  discussion. `mark_index_entry`, `list_index_entries` (Arabic sorting that
+  ignores harakat and hamza forms), `remove_index_entries`.
+- Several indexes in one book through index types: one letter per index
+  (e.g. P أعلام, L أماكن, H أطراف الأحاديث).
+- `insert_index`: title on a new page, 1–4 columns, letter headings in any
+  colour, dotted leaders to right-aligned page numbers, Arabic sorting.
+- `insert_toc`: table of contents from heading levels and/or your own styles
+  ("Chapter" → 1, "Bab" → 2), clickable, dotted leaders, coloured first level.
+- INDEX and TOC are written as one field whose cached entries sit inside it,
+  so updating replaces them. Checked in Microsoft Word: TOC with `\t` and
+  `\u` together finds nothing, so `\u` is used only for heading-level TOCs.
+
 ### Added: footnote and endnote design
 
 - `set_note_continuation`: a mark ("=" by Arabic convention, or "(continued)")

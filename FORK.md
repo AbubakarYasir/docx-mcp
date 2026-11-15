@@ -42,6 +42,10 @@ any Arabic text that is still missing direction markup.
   `set_note_separator("full", color="520912")`, `set_note_numbering(
   restart="page")`, and `add_custom_mark_note(..., mark="[١]")` for a
   narration number that carries its own takhrij note.
+- **Indexes (فهارس):** `mark_index_entries(["عمر بن الخطاب", "البخاري"],
+  index_type="P")` then `insert_index(title="فهرس الأعلام", index_type="P")`;
+  `insert_toc(title="فهرس الموضوعات", styles={"Chapter": 1, "Bab": 2},
+  levels=None)`. Word fills the page numbers when the file opens.
 - **Themes:** `set_theme_fonts`, `apply_color_palette("scholarly-maroon")`.
 
 ## How every change is checked
