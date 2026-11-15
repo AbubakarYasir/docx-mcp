@@ -36,6 +36,13 @@ class CreationMixin:
         if template_path:
             _ensure_custom_styles(instance)
             _ensure_numbering(instance)
+        else:
+            # Built-in styles: make bold/italic/size apply to Arabic letters too.
+            from .bidi import mirror_complex_script
+
+            styles = instance._tree("word/styles.xml")
+            if styles is not None and mirror_complex_script(styles):
+                instance._mark("word/styles.xml")
 
         return instance
 
@@ -272,12 +279,12 @@ _STYLES_XML = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <w:style w:type="paragraph" w:styleId="Heading1">
     <w:name w:val="heading 1"/><w:basedOn w:val="Normal"/>
     <w:pPr><w:outlineLvl w:val="0"/></w:pPr>
-    <w:rPr><w:b/><w:sz w:val="32"/></w:rPr>
+    <w:rPr><w:b/><w:bCs/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr>
   </w:style>
   <w:style w:type="paragraph" w:styleId="Heading2">
     <w:name w:val="heading 2"/><w:basedOn w:val="Normal"/>
     <w:pPr><w:outlineLvl w:val="1"/></w:pPr>
-    <w:rPr><w:b/><w:sz w:val="28"/></w:rPr>
+    <w:rPr><w:b/><w:bCs/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr>
   </w:style>
   <w:style w:type="paragraph" w:styleId="Heading3">
     <w:name w:val="heading 3"/><w:basedOn w:val="Normal"/>

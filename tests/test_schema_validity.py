@@ -85,7 +85,8 @@ class TestSchemaOrder:
 
     def test_ppr_moved_to_front_of_paragraph(self):
         p = etree.fromstring(
-            f'<w:p xmlns:w="{W[1:-1]}"><w:r><w:t>x</w:t></w:r><w:pPr><w:jc w:val="left"/></w:pPr></w:p>'
+            f'<w:p xmlns:w="{W[1:-1]}"><w:r><w:t>x</w:t></w:r>'
+            f'<w:pPr><w:jc w:val="left"/></w:pPr></w:p>'
         )
         normalize_tree(p)
         assert _tags(p) == ["pPr", "r"]

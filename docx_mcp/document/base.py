@@ -13,6 +13,12 @@ from pathlib import Path
 
 from lxml import etree
 
+from docx_mcp.document.bidi import (
+    auto_bidi_enabled,
+    document_rtl_default,
+    mirror_complex_script,
+    normalize_bidi,
+)
 from docx_mcp.document.schema_order import normalize_tree
 
 from .errors import DocxMcpError, ErrCode
@@ -78,11 +84,14 @@ class BaseMixin:
         self._trees: dict[str, etree._Element] = {}
         self._modified: set[str] = set()
         self._binaries: dict[str, bytes] = {}  # zip_path -> bytes for in-memory binary updates
+        self._known_para_ids: set[str] | None = None
+        self._created_para_ids: set[str] = set()
 
     # ── Open / Close ────────────────────────────────────────────────────────
 
     def open(self) -> dict:
         """Unpack DOCX and parse XML files. Returns document info."""
+        self._known_para_ids = None
         if not self.source_path.exists():
             raise FileNotFoundError(f"File not found: {self.source_path}")
         if self.source_path.suffix.lower() != ".docx":
@@ -293,6 +302,32 @@ class BaseMixin:
             "schema_order_fixed": 0,
         }
 
+        # ── Right-to-left markup for new Arabic/Hebrew text ───────────────
+        repairs["rtl_marked"] = 0
+        if auto_bidi_enabled():
+            created = getattr(self, "_created_para_ids", set())
+            rtl_default = document_rtl_default(self._tree("word/styles.xml"))
+            styles_root = self._tree("word/styles.xml")
+            if styles_root is not None and "word/styles.xml" in self._modified:
+                repairs["rtl_marked"] += mirror_complex_script(styles_root)
+            for rel_path, tree in self._trees.items():
+                if tree is None or not rel_path.startswith(
+                    (
+                        "word/document",
+                        "word/footnotes",
+                        "word/endnotes",
+                        "word/header",
+                        "word/footer",
+                        "word/comments",
+                    )
+                ):
+                    continue
+                if rel_path not in self._modified:
+                    continue
+                n = normalize_bidi(tree, created, rtl_default)
+                if n:
+                    repairs["rtl_marked"] += n
+
         # ── Schema order of property elements (runs before anything else) ─
         for rel_path, tree in self._trees.items():
             if not rel_path.endswith(".xml") or tree is None:
@@ -454,17 +489,31 @@ class BaseMixin:
         return None
 
     def _new_para_id(self) -> str:
-        """Generate a unique paraId (8 hex digits, < 0x80000000)."""
-        existing: set[str] = set()
-        for tree in self._trees.values():
-            for el in tree.iter():
-                pid = el.get(f"{W14}paraId")
-                if pid:
-                    existing.add(pid.upper())
+        """Generate a unique paraId (8 hex digits, < 0x80000000).
+
+        Known ids are cached per open document (a full scan per new paragraph
+        made long documents quadratic). Every id handed out is recorded in
+        ``_created_para_ids`` so later steps can tell new paragraphs from the
+        ones that came with the file.
+        """
+        known = getattr(self, "_known_para_ids", None)
+        if known is None:
+            known = set()
+            for tree in self._trees.values():
+                for el in tree.iter():
+                    pid = el.get(f"{W14}paraId")
+                    if pid:
+                        known.add(pid.upper())
+            self._known_para_ids = known
+        created = getattr(self, "_created_para_ids", None)
+        if created is None:
+            created = self._created_para_ids = set()
         while True:
             val = random.randint(1, 0x7FFFFFFF)
             pid = f"{val:08X}"
-            if pid not in existing:
+            if pid not in known:
+                known.add(pid)
+                created.add(pid)
                 return pid
 
     @staticmethod

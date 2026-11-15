@@ -2846,6 +2846,72 @@ def set_document_language(language_code: str) -> str:
     return _js(_require_doc().set_document_language(language_code))
 
 
+# ── Right-to-left (Arabic, Urdu, Persian, Hebrew) ─────────────────────────────
+
+
+@mcp.tool()
+def set_document_direction(
+    direction: str = "rtl",
+    complex_script_font: str = "",
+    complex_script_size_pt: float | None = None,
+    language: str = "",
+    tables: bool = True,
+    document_handle: str = "",
+) -> str:
+    """Make a whole document right-to-left (Arabic, Urdu, Persian, Hebrew) or left-to-right.
+
+    Sets paragraph direction defaults, every section's direction, the font,
+    size and proofing language used for Arabic/Hebrew letters, and (optionally)
+    every table's column order. Paragraphs with their own explicit direction
+    keep it.
+
+    Args:
+        direction: "rtl" or "ltr".
+        complex_script_font: Font for Arabic/Hebrew letters, e.g. "Amiri",
+            "Traditional Arabic", "Sakkal Majalla". Empty = unchanged.
+        complex_script_size_pt: Size of Arabic/Hebrew letters in points.
+        language: e.g. "ar-SA", "ur-PK", "fa-IR". Default "ar-SA" for rtl.
+        tables: Also lay out all tables right-to-left.
+    """
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_document_direction(
+            direction,
+            complex_script_font=complex_script_font,
+            complex_script_size_pt=complex_script_size_pt,
+            language=language,
+            tables=tables,
+        )
+    )
+
+
+@mcp.tool()
+def set_paragraph_direction(para_id: str, direction: str = "rtl", document_handle: str = "") -> str:
+    """Set one paragraph's direction: "rtl", "ltr", or "auto" (from its first letter).
+
+    Works for paragraphs in the body, footnotes, endnotes, headers and footers.
+    New paragraphs containing Arabic/Hebrew text are already made right-to-left
+    automatically on save; use this to override.
+    """
+    _, doc = _resolve(document_handle)
+    return _js(doc.set_paragraph_direction(para_id, direction))
+
+
+@mcp.tool()
+def set_table_direction(table_idx: int, direction: str = "rtl", document_handle: str = "") -> str:
+    """Lay a table out right-to-left (first column on the right) or left-to-right."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.set_table_direction(table_idx, direction))
+
+
+@mcp.tool()
+def get_direction_report(document_handle: str = "") -> str:
+    """Report right-to-left status: RTL paragraphs, sections and tables, and any
+    Arabic/Hebrew text that is missing direction markup (which Word renders wrongly)."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.get_direction_report())
+
+
 @mcp.tool()
 def set_track_changes(enabled: bool, author: str = "") -> str:
     """Enable or disable revision tracking in the document.
