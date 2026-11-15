@@ -73,6 +73,7 @@ from .toc import TocMixin
 from .tracks import TracksMixin
 from .typography import TypographyMixin
 from .validation import ValidationMixin
+from .vectors import VectorArtMixin
 from .watermark import WatermarkMixin
 
 
@@ -92,6 +93,7 @@ class DocxDocument(
     PageDesignMixin,
     NotesDesignMixin,
     IndexingMixin,
+    VectorArtMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,

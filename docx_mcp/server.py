@@ -3611,6 +3611,122 @@ def insert_toc(
 
 
 @mcp.tool()
+def insert_svg(
+    svg: str,
+    after_para_id: str | None = None,
+    width_cm: float | None = None,
+    height_cm: float | None = None,
+    alignment: str = "center",
+    alt_text: str = "",
+    document_handle: str = "",
+) -> str:
+    """Insert SVG artwork (markup or a .svg path) as a native vector picture:
+    sharp at any zoom and in print in Word 2016+, with a PNG fallback for older
+    readers. Give width or height to keep proportions."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_svg(
+            svg,
+            after_para_id=after_para_id,
+            width_cm=width_cm,
+            height_cm=height_cm,
+            alignment=alignment,
+            alt_text=alt_text,
+        )
+    )
+
+
+@mcp.tool()
+def insert_ornament(
+    kind: str = "divider",
+    after_para_id: str | None = None,
+    width_cm: float | None = None,
+    color: str = "520912",
+    accent: str | None = None,
+    points: int = 12,
+    weight: float = 1.0,
+    alignment: str = "center",
+    document_handle: str = "",
+) -> str:
+    """Insert a generated Islamic-geometric ornament as vector art: star8
+    (khatam), rosette (n points), shamsa (title-page medallion), divider,
+    divider-dots, corner, band. color = lines, accent = fill (default: a light
+    tint)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_ornament(
+            kind,
+            after_para_id=after_para_id,
+            width_cm=width_cm,
+            color=color,
+            accent=accent,
+            points=points,
+            weight=weight,
+            alignment=alignment,
+        )
+    )
+
+
+@mcp.tool()
+def add_page_frame(
+    color: str = "520912",
+    accent: str | None = None,
+    margin_cm: float = 0.9,
+    weight: float = 1.0,
+    section_index: int | None = None,
+    svg: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Decorative frame on every page (double rule, khatam corners, side
+    diamonds), drawn behind the text from the header so it repeats without
+    moving the body. Pass svg for your own frame artwork."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.add_page_frame(
+            color=color,
+            accent=accent,
+            margin_cm=margin_cm,
+            weight=weight,
+            section_index=section_index,
+            svg=svg,
+        )
+    )
+
+
+@mcp.tool()
+def set_page_border(
+    style: str = "double",
+    color: str = "520912",
+    width_pt: float = 1.5,
+    space_pt: float = 24,
+    measure_from: str = "page",
+    pages: str = "all",
+    sides: list[str] | None = None,
+    section_index: int | None = None,
+    document_handle: str = "",
+) -> str:
+    """Word page border: single, double, thick, thick-thin, thin-thick,
+    thin-thick-thin, triple, dotted, dashed, wave, double-wave, 3d, or art
+    borders art-celtic, art-weave, art-weave-ribbon, art-weave-angles,
+    art-zigzag, art-triangles, art-diamonds, art-mosaic, art-flowers, art-vine,
+    art-double-d, art-basic-wide-outline, art-basic-black-dots,
+    art-twisted-lines; "none" removes. pages: all | first | not-first."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_page_border(
+            style,
+            color=color,
+            width_pt=width_pt,
+            space_pt=space_pt,
+            measure_from=measure_from,
+            pages=pages,
+            sides=tuple(sides) if sides else ("top", "left", "bottom", "right"),
+            section_index=section_index,
+        )
+    )
+
+
+@mcp.tool()
 def set_update_fields_on_open(enabled: bool = True, document_handle: str = "") -> str:
     """Make Word refresh every field (TOC, index, page references, running heads) on open."""
     _, doc = _resolve(document_handle)
