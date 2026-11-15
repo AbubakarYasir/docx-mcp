@@ -4,6 +4,31 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: footnote and endnote design
+
+- `set_note_continuation`: a mark ("=" by Arabic convention, or "(continued)")
+  at the foot of every page where a note runs on, in any font, size and
+  colour, aligned to the reading direction. Checked in Microsoft Word: the
+  notice prints in every layout mode. Text above the continued part prints
+  only in Word 2010 layout (Word 2013+ ignores the continuation separator and
+  reuses the normal separator), so it is opt-in with `legacy_layout=True` and
+  the tool says what will actually print.
+- `set_note_separator`: Word's short rule, a full-width rule in any colour and
+  thickness, an ornament ("⁂", "✽ ✽ ✽"), or none.
+- `set_note_numbering`: Arabic abjad / alphabetical, roman, letters, symbols,
+  circled and parenthesised numbers; restart every page or section; start
+  number; footnotes below text, endnotes at section or document end. Written
+  to settings and every section so Word cannot disagree.
+- `add_custom_mark_note`: a note opened by your own mark (a narration number
+  "[١]", "*", "(أ)") instead of an automatic number, at the start, end, or
+  after given text, with separate formatting in the body and in the note.
+- `convert_notes`: footnotes to endnotes and back, with styles and references.
+
+### Fixed
+
+- Saving no longer deletes separator and continuation notes as "orphans"
+  (they have no body reference by design), and footnote listings skip them.
+
 ### Added: page design
 
 - `design_header_footer`: headers/footers from start/centre/end zones with

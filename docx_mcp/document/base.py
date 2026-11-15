@@ -372,6 +372,8 @@ class BaseMixin:
             ref_ids = {int(ref.get(f"{W}id", "0")) for ref in body.iter(f"{W}footnoteReference")}
             for fn in list(fn_tree.findall(f"{W}footnote")):
                 fn_id = int(fn.get(f"{W}id", "0"))
+                if fn.get(f"{W}type") not in (None, "normal"):
+                    continue  # separators and continuation notice are not referenced
                 if fn_id >= 2 and fn_id not in ref_ids:
                     fn_tree.remove(fn)
                     repairs["orphan_footnotes_removed"] += 1
@@ -384,7 +386,7 @@ class BaseMixin:
             ref_ids = {int(ref.get(f"{W}id", "0")) for ref in body.iter(f"{W}endnoteReference")}
             for en in list(en_tree.findall(f"{W}endnote")):
                 en_id_str = en.get(f"{W}id", "0")
-                if en_id_str in ("0", "-1"):
+                if en_id_str in ("0", "-1") or en.get(f"{W}type") not in (None, "normal"):
                     continue
                 en_id = int(en_id_str)
                 if en_id not in ref_ids:
@@ -485,7 +487,11 @@ class BaseMixin:
     @staticmethod
     def _real_footnotes(fn_root: etree._Element) -> list[etree._Element]:
         """Return footnote elements excluding separators (id 0 and -1)."""
-        return [f for f in fn_root.findall(f"{W}footnote") if f.get(f"{W}id") not in ("0", "-1")]
+        return [
+            f
+            for f in fn_root.findall(f"{W}footnote")
+            if f.get(f"{W}id") not in ("0", "-1") and f.get(f"{W}type") in (None, "normal")
+        ]
 
     def _find_para(self, root: etree._Element, para_id: str) -> etree._Element | None:
         for p in root.iter(f"{W}p"):

@@ -3312,6 +3312,145 @@ def set_book_layout(
 
 
 @mcp.tool()
+def set_note_continuation(
+    kind: str = "footnote",
+    notice_text: str = "=",
+    separator_text: str = "=",
+    keep_rule: bool = True,
+    font: str | None = None,
+    cs_font: str | None = None,
+    size_pt: float | None = None,
+    color: str | None = None,
+    bold: bool | None = None,
+    notice_alignment: str = "end",
+    separator_alignment: str = "start",
+    direction: str = "auto",
+    legacy_layout: bool = False,
+    document_handle: str = "",
+) -> str:
+    """Mark notes that run onto the next page: notice_text ("=" by Arabic
+    convention, or "(continued)") prints at the foot of the page where a note
+    breaks. separator_text prints above the continued part only in Word 2010
+    layout (legacy_layout=True; Word then shows "Compatibility Mode"); Word
+    2013+ layout reuses the normal separator there."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_note_continuation(
+            kind,
+            notice_text=notice_text,
+            separator_text=separator_text,
+            keep_rule=keep_rule,
+            font=font,
+            cs_font=cs_font,
+            size_pt=size_pt,
+            color=color,
+            bold=bold,
+            notice_alignment=notice_alignment,
+            separator_alignment=separator_alignment,
+            direction=direction,
+            legacy_layout=legacy_layout,
+        )
+    )
+
+
+@mcp.tool()
+def set_note_separator(
+    kind: str = "footnote",
+    style: str = "default",
+    text: str = "",
+    color: str = "000000",
+    thickness_pt: float = 0.75,
+    direction: str = "auto",
+    document_handle: str = "",
+) -> str:
+    """The line above footnotes/endnotes: style default (Word's short rule),
+    full (full-width rule in any colour and thickness), none, or text (an
+    ornament such as "⁂" or "✽ ✽ ✽"). In Word 2013+ this also styles the line
+    above continued notes."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_note_separator(
+            kind,
+            style,
+            text=text,
+            color=color,
+            thickness_pt=thickness_pt,
+            direction=direction,
+        )
+    )
+
+
+@mcp.tool()
+def set_note_numbering(
+    kind: str = "footnote",
+    number_format: str | None = None,
+    restart: str | None = None,
+    start_at: int | None = None,
+    position: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Note numbering for the whole document: number_format decimal |
+    arabic-abjad | arabic-alpha | roman | upper-roman | letters | upper-letters
+    | symbols | decimal-parentheses | decimal-circle; restart continuous | page
+    | section; start_at; position (footnotes: page-bottom | below-text;
+    endnotes: section-end | document-end)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_note_numbering(
+            kind,
+            number_format=number_format,
+            restart=restart,
+            start_at=start_at,
+            position=position,
+        )
+    )
+
+
+@mcp.tool()
+def add_custom_mark_note(
+    para_id: str,
+    text: str,
+    mark: str,
+    kind: str = "footnote",
+    where: str = "end",
+    after_text: str | None = None,
+    mark_in_body: dict | None = None,
+    mark_in_note: dict | None = None,
+    note_text_props: dict | None = None,
+    document_handle: str = "",
+) -> str:
+    """Footnote/endnote with your own mark instead of a number, e.g. a
+    narration number "[١]" that itself carries the takhrij note. where: start,
+    end, or after (with after_text). mark_in_body / mark_in_note /
+    note_text_props take run formatting such as {"bold": true, "color":
+    "520912", "cs_font": "Amiri"}."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.add_custom_mark_note(
+            para_id,
+            text,
+            mark,
+            kind=kind,
+            where=where,
+            after_text=after_text,
+            mark_in_body=mark_in_body,
+            mark_in_note=mark_in_note,
+            note_text_props=note_text_props,
+        )
+    )
+
+
+@mcp.tool()
+def convert_notes(
+    from_kind: str = "footnote", ids: list[int] | None = None, document_handle: str = ""
+) -> str:
+    """Turn footnotes into endnotes (from_kind="footnote") or endnotes into
+    footnotes; ids limits it to some notes."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.convert_notes(from_kind, ids))
+
+
+@mcp.tool()
 def set_update_fields_on_open(enabled: bool = True, document_handle: str = "") -> str:
     """Make Word refresh every field (TOC, index, page references, running heads) on open."""
     _, doc = _resolve(document_handle)
