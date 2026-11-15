@@ -4,6 +4,27 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Changed: production-grade Islamic ornament
+
+The first ornament set was flat primitives. Rebuilt after studying the
+author's own artwork (Markaz Athari ring, MSN dividers and banners,
+Halaqaat cartouches) and classical references, on real constructions:
+
+- Girih from Hankin's polygons-in-contact method on clean 4.8.8 / 3.12.12 /
+  6.6.6 tilings; classical rosettes (star edges crossing at the tips and
+  running on into petals).
+- Woven strapwork: strands alternate over/under, solved as a parity
+  2-colouring; the under strand is cut exactly along the over strand.
+- True parallel offsets for double and triple outlines; Bézier fleurons.
+- New motifs: numbered star medallion, segmented girih ring, interlocking
+  guilloche bands (rings, octagon, hexagon, khatam) with a star in each link,
+  calligraphic swash divider, lobed / banner / arch cartouches.
+- `insert_cartouche_title`: real Word text on a vector cartouche.
+- `add_page_frame(style=...)`: woven page border with corner rosettes; moves
+  header, footer and margins inside the border.
+- New dependency: `shapely` (prebuilt wheels on Windows, macOS, Linux).
+- Checked in Microsoft Word: everything exports to PDF as vectors.
+
 ### Added: whole-book presets and Word power features
 
 - `apply_book_preset`: a scholarly book in one call — `tahqiq` (house style:

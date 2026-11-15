@@ -26,7 +26,12 @@ def doc(tmp_path: Path):
 
 @pytest.mark.parametrize("kind", ORNAMENTS)
 def test_ornaments_are_valid_svg_and_render(kind):
-    svg = ornament_svg(kind, color="520912", aspect=8 if kind in ("divider", "band") else None)
+    svg = ornament_svg(
+        kind,
+        color="520912",
+        aspect=8 if kind in ("divider", "band") else None,
+        number="١" if kind == "star8" else None,
+    )
     root = etree.fromstring(svg.encode())
     assert root.tag == "{http://www.w3.org/2000/svg}svg"
     png = render_png(svg, 120)
@@ -87,6 +92,7 @@ def test_page_frame_lives_in_header_behind_text(doc):
 def test_page_frame_creates_header_when_missing(doc):
     r = doc.add_page_frame()
     assert len(r["frame_in"]) == 1
+    assert "header" in r["margins_adjusted"]
     sect = doc._trees["word/document.xml"].find(f".//{W}sectPr")
     assert sect.find(f"{W}headerReference") is not None
     doc.save()
@@ -108,3 +114,23 @@ def test_page_border_errors(doc):
         doc.set_page_border("rainbow")
     with pytest.raises(ValueError):
         doc.set_page_border("double", pages="odd")
+
+
+def test_cartouche_title_is_text_over_art(doc):
+    r = doc.insert_cartouche_title("الباب الأول", after_para_id=doc._first, kind="arch")
+    p = doc._find_para(doc._trees["word/document.xml"], r["para_id"])
+    assert "الباب الأول" in "".join(p.itertext())
+    anchor = next(
+        p.iter("{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}anchor")
+    )
+    assert anchor.get("behindDoc") == "1"
+    with pytest.raises(ValueError):
+        doc.insert_cartouche_title("x", kind="cloud")
+    doc.save()
+
+
+@pytest.mark.parametrize("kind", ["cartouche-lobed", "cartouche-banner", "cartouche-arch", "ring"])
+def test_insert_new_ornaments(doc, kind):
+    r = doc.insert_ornament(kind, after_para_id=doc._first)
+    assert r["width_cm"] > 2
+    doc.save()
