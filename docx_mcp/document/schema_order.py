@@ -96,7 +96,41 @@ _SDTPR = _q(
 )
 _SDTPR_SAME_RANK = {t: f"{{{_W}}}_type" for t in _q(_SDT_TYPES)}
 
+# settings.xml: CT_Settings is one long sequence.
+_SETTINGS = _q(
+    "writeProtection view zoom removePersonalInformation removeDateAndTime "
+    "doNotDisplayPageBoundaries displayBackgroundShape printPostScriptOverText "
+    "printFractionalCharacterWidth printFormsData embedTrueTypeFonts embedSystemFonts "
+    "saveSubsetFonts saveFormsData mirrorMargins alignBordersAndEdges "
+    "bordersDoNotSurroundHeader bordersDoNotSurroundFooter gutterAtTop hideSpellingErrors "
+    "hideGrammaticalErrors activeWritingStyle proofState formsDesign attachedTemplate "
+    "linkStyles stylePaneFormatFilter stylePaneSortMethod documentType mailMerge revisionView "
+    "trackRevisions doNotTrackMoves doNotTrackFormatting documentProtection "
+    "autoFormatOverride styleLockTheme styleLockQFSet defaultTabStop autoHyphenation "
+    "consecutiveHyphenLimit hyphenationZone doNotHyphenateCaps showEnvelope summaryLength "
+    "clickAndTypeStyle defaultTableStyle evenAndOddHeaders bookFoldRevPrinting "
+    "bookFoldPrinting bookFoldPrintingSheets drawingGridHorizontalSpacing "
+    "drawingGridVerticalSpacing displayHorizontalDrawingGridEvery "
+    "displayVerticalDrawingGridEvery doNotUseMarginsForDrawingGridOrigin "
+    "drawingGridHorizontalOrigin drawingGridVerticalOrigin doNotShadeFormData "
+    "noPunctuationKerning characterSpacingControl printTwoOnOne strictFirstAndLastChars "
+    "noLineBreaksAfter noLineBreaksBefore savePreviewPicture doNotValidateAgainstSchema "
+    "saveInvalidXml ignoreMixedContent alwaysShowPlaceholderText doNotDemarcateInvalidXml "
+    "saveXmlDataOnly useXSLTWhenSaving saveThroughXslt showXMLTags alwaysMergeEmptyNamespace "
+    "updateFields hdrShapeDefaults footnotePr endnotePr compat docVars rsids mathPr "
+    "attachedSchema themeFontLang clrSchemeMapping doNotIncludeSubdocsInStats "
+    "doNotAutoCompressPictures forceUpgrade captions readModeInkLockDown smartTagType "
+    "schemaLibrary shapeDefaults doNotEmbedSmartTags decimalSymbol listSeparator"
+)
+# Footnote/endnote properties (in sectPr and settings).
+_NOTEPR = _q("pos numFmt numStart numRestart footnote endnote")
+_PGBORDERS = _q("top left bottom right")
+
 _ORDERS: dict[str, tuple[list[str], dict[str, str]]] = {
+    f"{{{_W}}}settings": (_SETTINGS, {}),
+    f"{{{_W}}}footnotePr": (_NOTEPR, {}),
+    f"{{{_W}}}endnotePr": (_NOTEPR, {}),
+    f"{{{_W}}}pgBorders": (_PGBORDERS, {}),
     f"{{{_W}}}numbering": (_NUMBERING, {}),
     f"{{{_W}}}trPr": (_TRPR, _TRPR_SAME_RANK),
     f"{{{_W}}}sdtPr": (_SDTPR, _SDTPR_SAME_RANK),

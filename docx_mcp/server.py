@@ -3109,7 +3109,9 @@ def list_honorifics(document_handle: str = "") -> str:
 
 @mcp.tool()
 def apply_honorifics(
-    font: str = "Scheherazade New",
+    glyph_set: str = "unicode",
+    font: str | None = None,
+    fallback_font: str | None = None,
     color: str | None = None,
     size_pt: float | None = None,
     bold: bool | None = None,
@@ -3119,18 +3121,28 @@ def apply_honorifics(
     parts: str = "all",
     document_handle: str = "",
 ) -> str:
-    """Replace honorific phrases (صلى الله عليه وسلم, رضي الله عنه/عنها/عنهم/عنهما,
-    رحمه الله, عليه السلام, عز وجل, جل جلاله …) and bracketed abbreviations
-    ((ص), (رض), (رح), (ع)) with their full Unicode glyphs, in a font that draws
-    them, with an optional colour and size. Tashkeel and spelling variants match.
+    """Replace honorific phrases with full glyphs, each in a font that draws it.
 
-    font: Scheherazade New or Noto Naskh Arabic draw every glyph; Amiri,
-    Traditional Arabic and Sakkal Majalla only draw ﷺ.
+    Phrases (tashkeel and spelling variants match): صلى الله عليه وسلم,
+    رضي الله عنه/عنها/عنهم/عنهما/عنهن, رحمه الله, رحمهم الله, رحمة الله عليه/
+    عليها/عليهم/عليهما/عليهن, حفظه الله/حفظها الله/حفظهم الله, عليه السلام …,
+    عز وجل, جل جلاله, سبحانه وتعالى, تبارك وتعالى, قدس سره; and bracketed
+    abbreviations (ص) (صلعم) (رض) (رح) (ع).
+
+    glyph_set: "unicode" (official code points; Scheherazade New / Noto Naskh
+    Arabic draw all) or "jameel" (Jameel Noori Nastaleeq's own artwork with
+    full diacritics). The same code point means different phrases in different
+    fonts (U+FDFE is سبحانه وتعالى in Unicode but حفظه الله in Jameel), so each
+    glyph is always written with the font of its set; phrases missing from the
+    chosen set use the other set in its font. Glyphs already in the text get
+    colour/size/bold only — their font is never changed.
     """
     _, doc = _resolve(document_handle)
     return _js(
         doc.apply_honorifics(
+            glyph_set=glyph_set,
             font=font,
+            fallback_font=fallback_font,
             color=color,
             size_pt=size_pt,
             bold=bold,
@@ -3170,6 +3182,140 @@ def apply_color_palette(
     manuscript, and/or explicit slots {accent1: "520912", ...}."""
     _, doc = _resolve(document_handle)
     return _js(doc.apply_color_palette(palette, colors))
+
+
+# ── Page design ──────────────────────────────────────────────────────────────
+
+
+@mcp.tool()
+def design_header_footer(
+    kind: str = "header",
+    start: str = "",
+    center: str = "",
+    end: str = "",
+    variant: str = "default",
+    section_index: int | None = None,
+    direction: str = "auto",
+    font: str | None = None,
+    cs_font: str | None = None,
+    size_pt: float | None = None,
+    color: str | None = None,
+    bold: bool | None = None,
+    rule: str = "none",
+    rule_color: str = "000000",
+    rule_style: str = "single",
+    rule_size_pt: float = 0.75,
+    distance_cm: float | None = None,
+    zone_formats: dict | None = None,
+    document_handle: str = "",
+) -> str:
+    """Design a header or footer: three zones (start, center, end) with live fields.
+
+    Tokens: {PAGE}, {NUMPAGES}, {SECTIONPAGES}, {DATE}, {TITLE},
+    {STYLEREF:Heading 1} (running head = current chapter title, kept up to date
+    by Word), {FIELD:any field code}. variant: default | first | even (turns on
+    the matching Word setting; even pages reuse the default variant until an
+    even one is designed). rule: below | above | both | none, with rule_color,
+    rule_style (single, double, thick, dotted, dashed, thinThickSmallGap…).
+    zone_formats: per-zone overrides, e.g. {"center": {"bold": true}}.
+    """
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.design_header_footer(
+            kind,
+            start=start,
+            center=center,
+            end=end,
+            variant=variant,
+            section_index=section_index,
+            direction=direction,
+            font=font,
+            cs_font=cs_font,
+            size_pt=size_pt,
+            color=color,
+            bold=bold,
+            rule=rule,
+            rule_color=rule_color,
+            rule_style=rule_style,
+            rule_size_pt=rule_size_pt,
+            distance_cm=distance_cm,
+            zone_formats=zone_formats,
+        )
+    )
+
+
+@mcp.tool()
+def remove_header_footer(
+    kind: str = "header",
+    variant: str = "default",
+    section_index: int | None = None,
+    document_handle: str = "",
+) -> str:
+    """Detach a header or footer variant from a section (or all sections)."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.remove_header_footer(kind, variant, section_index))
+
+
+@mcp.tool()
+def set_page_numbering(
+    number_format: str = "decimal",
+    start_at: int | None = None,
+    section_index: int | None = None,
+    document_handle: str = "",
+) -> str:
+    """Page number format and restart: decimal, roman, upper-roman, letters,
+    upper-letters, arabic-abjad (أ ب ج د), arabic-alpha (أ ب ت ث), dash (- 1 -)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_page_numbering(number_format, start_at=start_at, section_index=section_index)
+    )
+
+
+@mcp.tool()
+def set_book_layout(
+    page_size: str | None = None,
+    width_mm: float | None = None,
+    height_mm: float | None = None,
+    top_cm: float | None = None,
+    bottom_cm: float | None = None,
+    inside_cm: float | None = None,
+    outside_cm: float | None = None,
+    gutter_cm: float | None = None,
+    mirror_margins: bool | None = None,
+    rtl_binding: bool | None = None,
+    header_cm: float | None = None,
+    footer_cm: float | None = None,
+    section_index: int | None = None,
+    document_handle: str = "",
+) -> str:
+    """Book page layout: page_size A4 | A5 | B5 | 17x24 | 14x21 | 16x23 | royal |
+    letter, margins (inside/outside for facing pages), gutter, mirror margins,
+    and rtl_binding (gutter on the right for right-to-left books)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_book_layout(
+            page_size=page_size,
+            width_mm=width_mm,
+            height_mm=height_mm,
+            top_cm=top_cm,
+            bottom_cm=bottom_cm,
+            inside_cm=inside_cm,
+            outside_cm=outside_cm,
+            gutter_cm=gutter_cm,
+            mirror_margins=mirror_margins,
+            rtl_binding=rtl_binding,
+            header_cm=header_cm,
+            footer_cm=footer_cm,
+            section_index=section_index,
+        )
+    )
+
+
+@mcp.tool()
+def set_update_fields_on_open(enabled: bool = True, document_handle: str = "") -> str:
+    """Make Word refresh every field (TOC, index, page references, running heads) on open."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.set_update_fields_on_open(enabled))
 
 
 @mcp.tool()

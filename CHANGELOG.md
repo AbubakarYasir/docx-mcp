@@ -4,6 +4,42 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: page design
+
+- `design_header_footer`: headers/footers from start/centre/end zones with
+  live fields (`{PAGE}`, `{NUMPAGES}`, `{SECTIONPAGES}`, `{DATE}`, `{TITLE}`,
+  `{STYLEREF:…}` running heads, any `{FIELD:…}`), first-page and even-page
+  variants (Word settings switched on automatically), rule lines above/below,
+  per-zone formatting, distance from the edge. With odd/even pages on, a
+  header or footer without an even variant is reused on even pages instead
+  of leaving them blank. `remove_header_footer`.
+- `set_page_numbering`: decimal, roman, letters, Arabic abjad / alphabetical,
+  "- 1 -", with restart.
+- `set_book_layout`: page presets (A4, A5, B5, 17×24, 14×21, 16×23, royal,
+  letter), inside/outside margins, gutter, mirror margins, right-hand binding
+  for right-to-left books, header/footer distance.
+- `set_update_fields_on_open`: Word refreshes TOC, index and running heads.
+
+### Added: glyph sets for honorifics
+
+- `apply_honorifics(glyph_set="unicode" | "jameel")`. Jameel Noori Nastaleeq
+  draws its own honorific artwork at non-standard code points and reuses
+  U+FDFE for حفظه الله (Unicode: سبحانه وتعالى), so a glyph is always written
+  with the font of its set; a phrase missing from the chosen set uses the
+  other set in that set's font. New phrases: حفظه الله / حفظها الله /
+  حفظهم الله, رحمة الله عليه / عليها / عليهم / عليهما / عليهن. Existing glyphs
+  are recoloured but never re-fonted. Longest phrase always wins.
+
+### Fixed
+
+- New documents opened in Word's Compatibility Mode (Word 2007 layout engine)
+  because settings.xml was empty. The template now sets compatibility mode 15
+  and Word's standard defaults.
+- settings.xml, footnotePr/endnotePr and pgBorders children are kept in schema
+  order.
+- `set_custom_property` created docProps/custom.xml without linking it in the
+  package relationships and content types (Word saw an unknown stray file).
+
 ### Added: styles, typography, honorific glyphs and themes
 
 - **Style designer** (`styledesign.py`): `define_style` creates or updates a
@@ -24,11 +60,10 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
   body, notes, headers and footers.
 - **Honorifics** (`honorifics.py`): `apply_honorifics` replaces honorific
   phrases (ignoring tashkeel and spelling variants) and bracketed
-  abbreviations — (ص) (صلعم) (رض) (رح) (ع) — with their full Unicode
-  glyphs ﷺ ﵌ ﵆ ﵁ ﵂ ﵃ ﵄ ﵅ ﵀ ﵏ ﵇ ﵈ ﵉ ﵊ ﵍ ﷻ ﷾ ﷿ ﵎ ﵋, each in a font that
-  draws it (Scheherazade New / Noto Naskh Arabic; Amiri, Traditional Arabic
-  and Sakkal Majalla only draw ﷺ) and an optional colour and size.
-  `list_honorifics` lists them.
+  abbreviations — (ص) (صلعم) (رض) (رح) (ع) — with their full glyphs, each
+  in a font that draws it (Scheherazade New / Noto Naskh Arabic; Amiri,
+  Traditional Arabic and Sakkal Majalla only draw ﷺ) and an optional colour
+  and size. `list_honorifics` lists them.
 - **Themes**: `set_theme_fonts` (heading/body, Latin and the Arabic script
   slot) and `apply_color_palette` (four book palettes or explicit slots).
   Documents without a theme get one, so `set_theme_color` no longer fails.

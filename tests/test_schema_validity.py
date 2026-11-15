@@ -245,3 +245,26 @@ class TestCharts:
         pie = _part(tmp_path / "t.docx", res["part_path"]).find(f".//{C}pieChart")
         tags = _tags(pie)
         assert tags.index("ser") < tags.index("firstSliceAng")
+
+
+class TestPackageParts:
+    def test_custom_properties_part_is_linked(self, tmp_path):
+        doc, _ = _new(tmp_path)
+        doc.set_custom_property("Project", "Risalah")
+        doc.save()
+        with zipfile.ZipFile(tmp_path / "t.docx") as zf:
+            rels = zf.read("_rels/.rels").decode()
+            ct = zf.read("[Content_Types].xml").decode()
+        assert "docProps/custom.xml" in rels
+        assert "/docProps/custom.xml" in ct
+
+    def test_new_document_not_in_compatibility_mode(self, tmp_path):
+        doc, _ = _new(tmp_path)
+        doc.save()
+        settings = _part(tmp_path / "t.docx", "word/settings.xml")
+        modes = [
+            c.get(f"{W}val")
+            for c in settings.iter(f"{W}compatSetting")
+            if c.get(f"{W}name") == "compatibilityMode"
+        ]
+        assert modes == ["15"]

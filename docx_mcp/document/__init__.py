@@ -46,6 +46,7 @@ from .litigation import LitigationMixin
 from .markdown_export import MarkdownExportMixin
 from .merge import MergeMixin
 from .metadata import MetadataMixin
+from .pagedesign import PageDesignMixin
 from .pdfexport import PdfExportMixin
 from .pii import PiiMixin
 from .properties import PropertiesMixin
@@ -86,6 +87,7 @@ class DocxDocument(
     StyleDesignMixin,
     TypographyMixin,
     HonorificsMixin,
+    PageDesignMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,

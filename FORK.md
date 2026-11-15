@@ -32,7 +32,11 @@ any Arabic text that is still missing direction markup.
 - **Several fonts in one line:** `insert_rich_paragraph` with spans.
 - **Honorifics as real glyphs:** `apply_honorifics(color="520912")` turns
   «صلى الله عليه وسلم», «رضي الله عنهما», (رض) … into ﷺ ﵄ ﵁ in Scheherazade
-  New, coloured.
+  New, coloured; `glyph_set="jameel"` uses Jameel Noori Nastaleeq's artwork
+  (with حفظه الله, رحمة الله عليه …).
+- **Book pages:** `set_book_layout(page_size="17x24", mirror_margins=True,
+  rtl_binding=True)`, `design_header_footer` with `{STYLEREF:Chapter}`
+  running heads and `{PAGE}`, `set_page_numbering`.
 - **Themes:** `set_theme_fonts`, `apply_color_palette("scholarly-maroon")`.
 
 ## How every change is checked

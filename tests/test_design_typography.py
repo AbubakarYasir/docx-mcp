@@ -10,7 +10,7 @@ from lxml import etree
 
 from docx_mcp import server
 from docx_mcp.document import DocxDocument
-from docx_mcp.document.honorifics import build_matcher, find_matches
+from docx_mcp.document.honorifics import build_matcher, find_matches, resolve_glyph
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 W14 = "{http://schemas.microsoft.com/office/word/2010/wordml}"
@@ -33,35 +33,61 @@ def _style(doc, sid):
 
 class TestHonorifics:
     @pytest.mark.parametrize(
-        ("text", "glyph"),
+        ("text", "key", "glyph"),
         [
-            ("صلى الله عليه وسلم", "ﷺ"),
-            ("صَلَّى اللهُ عَلَيْهِ وَسَلَّمَ", "ﷺ"),
-            ("(ص)", "ﷺ"),
-            ("(صلعم)", "ﷺ"),
-            ("رضي الله عنه", "﵁"),
-            ("رضي الله عنها", "﵂"),
-            ("رضي الله عنهم", "﵃"),
-            ("رضي الله عنهما", "﵄"),
-            ("(رض)", "﵁"),
-            ("رحمه الله", "﵀"),
-            ("رحمهم الله", "﵏"),
-            ("عليه السلام", "﵇"),
-            ("عليه الصلاة والسلام", "﵊"),
-            ("عز وجل", "﷿"),
-            ("جل جلاله", "ﷻ"),
-            ("سبحانه وتعالى", "﷾"),
-            ("تبارك وتعالى", "﵎"),
-            ("[رضي الله عنه]", "﵁"),
+            ("صلى الله عليه وسلم", "salla", "\ufdfa"),
+            ("صَلَّى اللهُ عَلَيْهِ وَسَلَّمَ", "salla", "\ufdfa"),
+            ("(ص)", "salla", "\ufdfa"),
+            ("(صلعم)", "salla", "\ufdfa"),
+            ("رضي الله عنه", "radi-anhu", "\ufd41"),
+            ("رضي الله عنها", "radi-anha", "\ufd42"),
+            ("رضي الله عنهم", "radi-anhum", "\ufd43"),
+            ("رضي الله عنهما", "radi-anhuma", "\ufd44"),
+            ("(رض)", "radi-anhu", "\ufd41"),
+            ("رحمه الله", "rahimahu", "\ufd40"),
+            ("رحمهم الله", "rahimahum", "\ufd4f"),
+            ("عليه السلام", "alayhi-salam", "\ufd47"),
+            ("عليه الصلاة والسلام", "alayhi-salat", "\ufd4a"),
+            ("عز وجل", "azza-wa-jall", "\ufdff"),
+            ("جل جلاله", "jalla-jalaluh", "\ufdfb"),
+            ("سبحانه وتعالى", "subhanahu", "\ufdfe"),
+            ("تبارك وتعالى", "tabaraka", "\ufd4e"),
+            ("[رضي الله عنه]", "radi-anhu", "\ufd41"),
         ],
     )
-    def test_phrase_to_glyph(self, text, glyph):
+    def test_phrase_to_glyph(self, text, key, glyph):
         spans = find_matches(f"قال {text} ثم", build_matcher())
-        assert [g for _, _, g in spans] == [glyph]
+        assert [k for _, _, k in spans] == [key]
+        assert resolve_glyph(key, "unicode", {})[0] == glyph
+
+    @pytest.mark.parametrize(
+        ("key", "glyph"),
+        [
+            ("hafizahu", "\ufdfe"),
+            ("hafizaha", "\ue005"),
+            ("hafizahum", "\ue006"),
+            ("radi-anhu", "\ufddc"),
+            ("rahmatullah-alayh", "\ufdec"),
+            ("rahmatullah-alayha", "\ue007"),
+            ("rahmatullah-alayhinna", "\ue010"),
+        ],
+    )
+    def test_jameel_set(self, key, glyph):
+        assert resolve_glyph(key, "jameel", {}) == (glyph, "Jameel Noori Nastaleeq")
+
+    def test_fallback_keeps_glyph_with_its_font(self):
+        # حفظه الله has no Unicode code point: Unicode mode borrows Jameel's,
+        # and must use Jameel's font (in Scheherazade that code point is سبحانه وتعالى).
+        assert resolve_glyph("hafizahu", "unicode", {}) == ("\ufdfe", "Jameel Noori Nastaleeq")
+        assert resolve_glyph("subhanahu", "jameel", {}) == ("\ufdfe", "Scheherazade New")
+
+    def test_rahmatullah_alayh_beats_rahimahu(self):
+        spans = find_matches("والإمام رحمة الله عليه.", build_matcher())
+        assert [k for _, _, k in spans] == ["rahmatullah-alayh"]
 
     def test_longest_phrase_wins(self):
         spans = find_matches("ابن عمر رضي الله عنهما", build_matcher())
-        assert spans[0][2] == "﵄"
+        assert spans[0][2] == "radi-anhuma"
 
     def test_bare_abbreviation_is_not_replaced(self):
         # «ص» alone is a letter (e.g. a page abbreviation), not an honorific.
@@ -77,10 +103,11 @@ class TestHonorifics:
         doc, first = _new(tmp_path)
         doc.insert_paragraph(first, "قال رسول الله صلى الله عليه وسلم وعمر (رض).")
         res = doc.apply_honorifics(color="520912")
-        assert res["replaced"] == 2 and res["font_has_full_set"]
+        assert res["replaced"] == 2 and res["fonts_used"] == {"Scheherazade New": 2}
         assert _text(doc).startswith("قال رسول الله ﷺ وعمر ﵁")
         glyph_runs = [
-            r for r in doc._trees["word/document.xml"].iter(f"{W}r")
+            r
+            for r in doc._trees["word/document.xml"].iter(f"{W}r")
             if (r.findtext(f"{W}t") or "") in ("ﷺ", "﵁")
         ]
         assert len(glyph_runs) == 2
@@ -100,15 +127,33 @@ class TestHonorifics:
         doc, first = _new(tmp_path)
         doc.insert_paragraph(first, "قال النبي ﷺ ذلك")
         res = doc.apply_honorifics(color="520912")
-        assert res["glyph_runs_formatted"] >= 1
+        assert res["existing_glyph_runs_restyled"] >= 1
+        # its font is not changed (the code point's meaning depends on the font)
+        runs = [
+            r for r in doc._trees["word/document.xml"].iter(f"{W}r") if r.findtext(f"{W}t") == "ﷺ"
+        ]
+        assert runs and runs[0].find(f"{W}rPr/{W}rFonts") is None
+
+    def test_jameel_mode_in_document(self, tmp_path):
+        doc, first = _new(tmp_path)
+        doc.insert_paragraph(first, "الشيخ حفظه الله والله سبحانه وتعالى")
+        res = doc.apply_honorifics(glyph_set="jameel")
+        assert res["fonts_used"] == {"Jameel Noori Nastaleeq": 1, "Scheherazade New": 1}
+        with pytest.raises(ValueError):
+            doc.apply_honorifics(glyph_set="inpage")
 
 
 class TestStyles:
     def test_define_creates_then_updates(self, tmp_path):
         doc, _ = _new(tmp_path)
-        a = doc.define_style("Matn", run={"cs_font": "Amiri", "size_pt": 14},
-                             paragraph={"alignment": "kashida", "direction": "rtl"},
-                             aliases=["متن"], gallery=True, ui_priority=1)
+        a = doc.define_style(
+            "Matn",
+            run={"cs_font": "Amiri", "size_pt": 14},
+            paragraph={"alignment": "kashida", "direction": "rtl"},
+            aliases=["متن"],
+            gallery=True,
+            ui_priority=1,
+        )
         assert a["created"]
         b = doc.define_style("متن", run={"color": "333333"})  # found by alias
         assert not b["created"] and b["style_id"] == "Matn"
@@ -158,7 +203,8 @@ class TestStyles:
         assert doc.apply_style_where("Narration", text_regex=r"^\[")["applied"] == 1
         assert doc.apply_style_where("Quote", text_regex=r"«[^»]+»")["applied"] == 1
         styled = [
-            r.findtext(f"{W}t") for r in doc._trees["word/document.xml"].iter(f"{W}r")
+            r.findtext(f"{W}t")
+            for r in doc._trees["word/document.xml"].iter(f"{W}r")
             if r.find(f"{W}rPr/{W}rStyle") is not None
         ]
         assert styled == ["«إنما الأعمال بالنيات»"]
@@ -180,9 +226,11 @@ class TestRichTextAndThemes:
         doc, first = _new(tmp_path)
         res = doc.insert_rich_paragraph(
             first,
-            [{"text": "A", "font": "Cambria", "italic": True},
-             {"text": "ب", "cs_font": "Amiri", "color": "#1F4E79"},
-             {"text": " page {PAGE} of {NUMPAGES}"}],
+            [
+                {"text": "A", "font": "Cambria", "italic": True},
+                {"text": "ب", "cs_font": "Amiri", "color": "#1F4E79"},
+                {"text": " page {PAGE} of {NUMPAGES}"},
+            ],
             paragraph={"alignment": "center"},
         )
         p = doc._find_para_any(res["para_id"])[1]
