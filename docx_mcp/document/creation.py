@@ -356,6 +356,23 @@ _STYLES_XML = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 _SETTINGS_XML = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:zoom w:percent="100"/>
+  <w:proofState w:spelling="clean" w:grammar="clean"/>
+  <w:defaultTabStop w:val="720"/>
+  <w:characterSpacingControl w:val="doNotCompress"/>
+  <w:footnotePr><w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr>
+  <w:endnotePr><w:endnote w:id="-1"/><w:endnote w:id="0"/></w:endnotePr>
+  <w:compat>
+    <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
+    <w:compatSetting w:name="overrideTableStyleFontSizeAndJustification" w:uri="http://schemas.microsoft.com/office/word" w:val="1"/>
+    <w:compatSetting w:name="enableOpenTypeFeatures" w:uri="http://schemas.microsoft.com/office/word" w:val="1"/>
+    <w:compatSetting w:name="doNotFlipMirrorIndents" w:uri="http://schemas.microsoft.com/office/word" w:val="1"/>
+    <w:compatSetting w:name="differentiateMultirowTableHeaders" w:uri="http://schemas.microsoft.com/office/word" w:val="1"/>
+    <w:compatSetting w:name="useWord2013TrackBottomHyphenation" w:uri="http://schemas.microsoft.com/office/word" w:val="0"/>
+  </w:compat>
+  <w:themeFontLang w:val="en-GB" w:bidi="ar-SA"/>
+  <w:decimalSymbol w:val="."/>
+  <w:listSeparator w:val=","/>
 </w:settings>"""
 
 _NUMBERING_XML = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

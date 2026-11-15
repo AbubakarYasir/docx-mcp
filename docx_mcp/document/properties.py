@@ -107,8 +107,11 @@ class PropertiesMixin:
                 },
             )
             self._trees["docProps/custom.xml"] = root
+            self._link_custom_properties_part()
 
-        existing = root.find(f"{CUSTOM}property[@name='{name}']")
+        existing = next(
+            (p for p in root.findall(f"{CUSTOM}property") if p.get("name") == name), None
+        )
         if existing is not None:
             for child in list(existing):
                 existing.remove(child)
@@ -126,6 +129,31 @@ class PropertiesMixin:
 
         self._mark("docProps/custom.xml")
         return {"name": name, "value": value, "vt_type": vt_type}
+
+    def _link_custom_properties_part(self) -> None:
+        """A new docProps/custom.xml must be listed in the package relationships
+        and content types, or Word treats it as an unknown stray file."""
+        from .ooxml import ensure_override
+
+        rels = self._tree("_rels/.rels")
+        if rels is None and self.workdir and (self.workdir / "_rels" / ".rels").exists():
+            rels = etree.parse(str(self.workdir / "_rels" / ".rels")).getroot()
+            self._trees["_rels/.rels"] = rels
+        rel_type = (
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties"
+        )
+        if rels is not None and not any(r.get("Type") == rel_type for r in rels):
+            from .ooxml import add_relationship
+
+            add_relationship(rels, rel_type, "docProps/custom.xml")
+            self._mark("_rels/.rels")
+        ct = self._tree("[Content_Types].xml")
+        if ct is not None and ensure_override(
+            ct,
+            "/docProps/custom.xml",
+            "application/vnd.openxmlformats-officedocument.custom-properties+xml",
+        ):
+            self._mark("[Content_Types].xml")
 
     def delete_custom_property(self, name: str) -> dict:
         """Delete a custom property by name."""

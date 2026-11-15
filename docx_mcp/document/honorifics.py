@@ -21,38 +21,81 @@ from lxml import etree
 
 from .ooxml import XML_SPACE, W, apply_run_props
 
-# (glyph, Unicode name, full phrases, abbreviations)
-HONORIFICS: list[tuple[str, str, list[str], list[str]]] = [
-    ("ﷺ", "SALLALLAHOU ALAYHE WASALLAM", ["صلى الله عليه وسلم"], ["صلعم", "ص", "صلى"]),
+# One entry per honorific. A glyph is only meaningful together with the font
+# it was drawn for: Unicode assigns official meanings (U+FDFA, U+FD40-FD4F …),
+# but some popular Urdu fonts draw their own artwork at other code points —
+# and even reuse official ones for a different phrase (Jameel Noori Nastaleeq
+# draws حفظه الله at U+FDFE, which Unicode defines as سبحانه وتعالى). So every
+# glyph set carries its font, and a phrase missing from the chosen set falls
+# back to another set *with that set's font*, never to a bare code point.
+#
+# fields: key, phrases, bracketed abbreviations, {glyph set: code point}
+HONORIFICS: list[tuple[str, list[str], list[str], dict[str, str]]] = [
     (
-        "﵌",
-        "SALLALLAHU ALAYHI WAAALIHEE WA-SALLAM",
+        "salla",
+        ["صلى الله عليه وسلم"],
+        ["صلعم", "ص", "صلى"],
+        {"unicode": "\ufdfa", "jameel": "\ufdfa"},
+    ),
+    (
+        "salla-wa-alih",
         ["صلى الله عليه وآله وسلم", "صلى الله عليه وعلى آله وسلم"],
         [],
+        {"unicode": "\ufd4c"},
     ),
-    ("﵆", "SALLALLAAHU ALAYHI WA-AALIH", ["صلى الله عليه وآله"], []),
-    ("﵄", "RADI ALLAAHU ANHUMAA", ["رضي الله عنهما"], []),
-    ("﵅", "RADI ALLAAHU ANHUNNA", ["رضي الله عنهن"], []),
-    ("﵃", "RADI ALLAAHU ANHUM", ["رضي الله عنهم"], []),
-    ("﵂", "RADI ALLAAHU ANHAA", ["رضي الله عنها"], []),
-    ("﵁", "RADI ALLAAHU ANH", ["رضي الله عنه"], ["رض", "رضه"]),
-    ("﵏", "RAHIMAHUM ALLAAH", ["رحمهم الله"], []),
-    ("﵀", "RAHIMAHU ALLAAH", ["رحمه الله"], ["رح", "رحه"]),
-    ("﵊", "ALAYHI AS-SALAATU WAS-SALAAM", ["عليه الصلاة والسلام"], []),
-    ("﵉", "ALAYHIMAA AS-SALAAM", ["عليهما السلام"], []),
-    ("﵈", "ALAYHIM AS-SALAAM", ["عليهم السلام"], []),
-    ("﵍", "ALAYHAA AS-SALAAM", ["عليها السلام"], []),
-    ("﵇", "ALAYHI AS-SALAAM", ["عليه السلام"], ["ع", "عم"]),
-    ("ﷻ", "JALLAJALALOUHOU", ["جل جلاله"], []),
-    ("﷾", "SUBHAANAHU WA TAAALAA", ["سبحانه وتعالى"], []),
-    ("﷿", "AZZA WA JALL", ["عز وجل"], []),
-    ("﵎", "TABAARAKA WA-TAAALAA", ["تبارك وتعالى"], []),
-    ("﵋", "QUDDISA SIRRAH", ["قدس سره"], []),
+    ("salla-alih", ["صلى الله عليه وآله"], [], {"unicode": "\ufd46"}),
+    ("radi-anhuma", ["رضي الله عنهما"], [], {"unicode": "\ufd44", "jameel": "\ufde0"}),
+    ("radi-anhunna", ["رضي الله عنهن"], [], {"unicode": "\ufd45"}),
+    ("radi-anhum", ["رضي الله عنهم"], [], {"unicode": "\ufd43", "jameel": "\ufde2"}),
+    ("radi-anha", ["رضي الله عنها"], [], {"unicode": "\ufd42", "jameel": "\ufdde"}),
+    ("radi-anhu", ["رضي الله عنه"], ["رض", "رضه"], {"unicode": "\ufd41", "jameel": "\ufddc"}),
+    ("rahimahum", ["رحمهم الله"], [], {"unicode": "\ufd4f"}),
+    ("rahimahu", ["رحمه الله"], ["رح", "رحه"], {"unicode": "\ufd40"}),
+    ("rahmatullah-alayhima", ["رحمة الله عليهما"], [], {"jameel": "\ufdee"}),
+    ("rahmatullah-alayhim", ["رحمة الله عليهم"], [], {"jameel": "\ufded"}),
+    ("rahmatullah-alayhinna", ["رحمة الله عليهن"], [], {"jameel": "\ue010"}),
+    ("rahmatullah-alayha", ["رحمة الله عليها"], [], {"jameel": "\ue007"}),
+    ("rahmatullah-alayh", ["رحمة الله عليه"], [], {"jameel": "\ufdec"}),
+    ("hafizahum", ["حفظهم الله"], [], {"jameel": "\ue006"}),
+    ("hafizaha", ["حفظها الله"], [], {"jameel": "\ue005"}),
+    ("hafizahu", ["حفظه الله"], [], {"jameel": "\ufdfe"}),
+    ("alayhi-salat", ["عليه الصلاة والسلام"], [], {"unicode": "\ufd4a", "jameel": "\ufdea"}),
+    ("alayhima-salam", ["عليهما السلام"], [], {"unicode": "\ufd49", "jameel": "\ufde7"}),
+    ("alayhim-salam", ["عليهم السلام"], [], {"unicode": "\ufd48", "jameel": "\ufde9"}),
+    ("alayha-salam", ["عليها السلام"], [], {"unicode": "\ufd4d", "jameel": "\ufde5"}),
+    ("alayhi-salam", ["عليه السلام"], ["ع", "عم"], {"unicode": "\ufd47", "jameel": "\ufde4"}),
+    ("jalla-jalaluh", ["جل جلاله"], [], {"unicode": "\ufdfb", "jameel": "\ufdfb"}),
+    ("subhanahu", ["سبحانه وتعالى"], [], {"unicode": "\ufdfe"}),
+    ("azza-wa-jall", ["عز وجل"], [], {"unicode": "\ufdff", "jameel": "\ufdef"}),
+    ("tabaraka", ["تبارك وتعالى"], [], {"unicode": "\ufd4e"}),
+    ("quddisa-sirruh", ["قدس سره"], [], {"unicode": "\ufd4b"}),
 ]
 
-GLYPHS = {g for g, *_ in HONORIFICS}
-DEFAULT_GLYPH_FONT = "Scheherazade New"
-FULL_COVERAGE_FONTS = ("Scheherazade New", "Noto Naskh Arabic")
+GLYPH_SETS = {
+    "unicode": {
+        "font": "Scheherazade New",
+        "fonts_with_full_set": ("Scheherazade New", "Noto Naskh Arabic"),
+    },
+    "jameel": {
+        "font": "Jameel Noori Nastaleeq",
+        "fonts_with_full_set": ("Jameel Noori Nastaleeq",),
+    },
+}
+DEFAULT_GLYPH_FONT = GLYPH_SETS["unicode"]["font"]
+FULL_COVERAGE_FONTS = GLYPH_SETS["unicode"]["fonts_with_full_set"]
+GLYPHS = {g for *_, sets in HONORIFICS for g in sets.values()} | {
+    "\ufdd0",
+    "\ufdd1",
+    "\ufddb",
+    "\ufddd",
+    "\ufddf",
+    "\ufde1",
+    "\ufde3",
+    "\ufde6",
+    "\ufde8",
+    "\ufdeb",
+    "\ufdff",
+}
 
 _MARKS = "ً-ٰٟۖ-ۭـ"  # harakat, Quranic marks, tatweel
 _SKIP = f"[{_MARKS}]*"
@@ -89,20 +132,39 @@ _ARABIC_LETTER = r"[ء-يٮ-ۓۺ-ۿ]"
 def build_matcher(
     include_abbreviations: bool = True, only: list[str] | None = None
 ) -> list[tuple[re.Pattern, str]]:
-    """[(compiled regex, glyph)] ordered longest phrase first."""
+    """[(compiled regex, honorific key)] ordered longest phrase first."""
     out = []
-    for glyph, _name, phrases, abbr in HONORIFICS:
-        if only and glyph not in only and not set(phrases) & set(only):
+    for key, phrases, abbr, sets in HONORIFICS:
+        if (
+            only
+            and key not in only
+            and not set(phrases) & set(only)
+            and not (set(sets.values()) & set(only))
+        ):
             continue
         pat = _pattern(phrases, abbr if include_abbreviations else [])
-        # Not part of a longer word on either side.
         rx = re.compile(rf"(?<!{_ARABIC_LETTER})(?:{pat})(?!{_ARABIC_LETTER})")
-        out.append((rx, glyph))
-    return out
+        out.append((max(len(p) for p in phrases), rx, key))
+    # Longest phrase first everywhere: «رحمة الله عليه» before «رحمه الله».
+    out.sort(key=lambda t: -t[0])
+    return [(rx, key) for _, rx, key in out]
+
+
+_BY_KEY = {key: sets for key, _p, _a, sets in HONORIFICS}
+
+
+def resolve_glyph(key: str, glyph_set: str, fonts: dict[str, str]) -> tuple[str, str] | None:
+    """(glyph, font) for an honorific in the chosen set, else another set."""
+    sets = _BY_KEY[key]
+    order = [glyph_set] + [s for s in GLYPH_SETS if s != glyph_set]
+    for name in order:
+        if name in sets:
+            return sets[name], fonts.get(name) or GLYPH_SETS[name]["font"]
+    return None
 
 
 def find_matches(text: str, matcher) -> list[tuple[int, int, str]]:
-    """Non-overlapping (start, end, glyph) spans, longest first."""
+    """Non-overlapping (start, end, honorific key) spans, longest first."""
     spans: list[tuple[int, int, str]] = []
     taken = [False] * len(text)
     for rx, glyph in matcher:
@@ -130,44 +192,48 @@ def _text_runs(p: etree._Element) -> list[etree._Element]:
     return runs
 
 
-def replace_in_run(r: etree._Element, matcher, glyph_props: dict) -> int:
-    """Split one run around honorific matches; glyphs get their own run."""
+def replace_in_run(r: etree._Element, matcher, resolve, base_props: dict, stats: dict) -> int:
+    """Split one run around honorific matches; each glyph gets its own run
+    in the font of its glyph set."""
     t = r.find(f"{W}t")
     text = t.text or ""
-    spans = find_matches(text, matcher)
+    spans = []
+    for s, e, key in find_matches(text, matcher):
+        res = resolve(key)
+        if res is None:
+            stats["no_glyph"][key] = stats["no_glyph"].get(key, 0) + 1
+            continue
+        spans.append((s, e, key, *res))
     if not spans:
         return 0
     parent = r.getparent()
     idx = list(parent).index(r)
     rpr = r.find(f"{W}rPr")
-    pieces: list[tuple[str, bool]] = []
+    pieces: list[tuple[str, dict | None]] = []
     pos = 0
-    for s, e, glyph in spans:
-        before = text[pos:s]
-        # A space before the honorific is kept; brackets were consumed.
-        if before:
-            pieces.append((before, False))
-        pieces.append((glyph, True))
+    for s, e, key, glyph, font in spans:
+        if text[pos:s]:
+            pieces.append((text[pos:s], None))
+        pieces.append((glyph, {**base_props, "font": font}))
+        stats["by_key"][key] = stats["by_key"].get(key, 0) + 1
+        stats["fonts"][font] = stats["fonts"].get(font, 0) + 1
         pos = e
     if pos < len(text):
-        pieces.append((text[pos:], False))
-    new_runs = []
-    for chunk, is_glyph in pieces:
+        pieces.append((text[pos:], None))
+    for i, (chunk, props) in enumerate(pieces):
         nr = etree.Element(f"{W}r")
         if rpr is not None:
             nr.append(copy.deepcopy(rpr))
-        if is_glyph:
+        if props is not None:
             nrpr = nr.find(f"{W}rPr")
             if nrpr is None:
                 nrpr = etree.SubElement(nr, f"{W}rPr")
-            apply_run_props(nrpr, glyph_props)
+            apply_run_props(nrpr, props)
             if nrpr.find(f"{W}rtl") is None:
                 etree.SubElement(nrpr, f"{W}rtl")
         nt = etree.SubElement(nr, f"{W}t")
         nt.text = chunk
         nt.set(XML_SPACE, "preserve")
-        new_runs.append(nr)
-    for i, nr in enumerate(new_runs):
         parent.insert(idx + i, nr)
     parent.remove(r)
     return len(spans)
@@ -217,22 +283,25 @@ class HonorificsMixin:
     """Replace honorific phrases with ligature glyphs; style the glyphs."""
 
     def list_honorifics(self) -> list[dict]:
-        """The supported honorific glyphs, the phrases they replace, and abbreviations."""
+        """Supported honorifics: phrases, bracketed abbreviations, and the glyph
+        in each glyph set (unicode = Scheherazade New / Noto Naskh Arabic,
+        jameel = Jameel Noori Nastaleeq)."""
         return [
             {
-                "glyph": g,
-                "codepoint": f"U+{ord(g):04X}",
-                "name": name,
+                "key": key,
                 "phrases": phrases,
                 "abbreviations_in_brackets": abbr,
+                "glyphs": {k: f"{v} U+{ord(v):04X}" for k, v in sets.items()},
             }
-            for g, name, phrases, abbr in HONORIFICS
+            for key, phrases, abbr, sets in HONORIFICS
         ]
 
     def apply_honorifics(
         self,
         *,
-        font: str = DEFAULT_GLYPH_FONT,
+        glyph_set: str = "unicode",
+        font: str | None = None,
+        fallback_font: str | None = None,
         color: str | None = None,
         size_pt: float | None = None,
         bold: bool | None = None,
@@ -244,26 +313,41 @@ class HonorificsMixin:
         """Replace honorific phrases with their glyphs and format every glyph.
 
         Args:
-            font: Font for the glyphs. Scheherazade New and Noto Naskh Arabic
-                draw the full set; most other Arabic fonts only draw ﷺ.
-            color: Glyph colour (RRGGBB), e.g. "520912" for maroon. None = text colour.
+            glyph_set: "unicode" (official code points; Scheherazade New or
+                Noto Naskh Arabic draw all of them) or "jameel" (Jameel Noori
+                Nastaleeq's own artwork, incl. حفظه الله / حفظها الله /
+                حفظهم الله and رحمة الله عليه …). A phrase the chosen set
+                lacks uses the other set, in that set's font.
+            font: Font for the chosen set (e.g. "Noto Naskh Arabic" instead of
+                Scheherazade New; "Jameel Noori Nastaleeq Kasheeda").
+            fallback_font: Font for glyphs taken from the other set.
+            color: Glyph colour (RRGGBB), e.g. "520912". None = text colour.
             size_pt: Glyph size. None = same as the text.
             bold: Force bold on/off for glyphs. None = keep.
             include_abbreviations: Also replace bracketed abbreviations such as
                 (ص), (صلعم), (رض), (رح), (ع).
-            only: Limit to these glyphs or phrases.
-            restyle_existing: Also format glyphs already in the text.
+            only: Limit to these keys, phrases or glyphs (see list_honorifics).
+            restyle_existing: Give glyphs already in the text the colour /
+                size / bold (their font is left alone, since the same code
+                point means different phrases in different fonts).
             parts: "all" (body, footnotes, endnotes, headers, footers, comments)
                 or "body".
         """
+        if glyph_set not in GLYPH_SETS:
+            raise ValueError(f"glyph_set must be one of {sorted(GLYPH_SETS)}")
+        fonts = {glyph_set: font or GLYPH_SETS[glyph_set]["font"]}
+        for other in GLYPH_SETS:
+            if other != glyph_set:
+                fonts[other] = fallback_font or GLYPH_SETS[other]["font"]
         matcher = build_matcher(include_abbreviations, only)
-        props: dict = {"font": font}
+        base: dict = {}
         if color:
-            props["color"] = color
+            base["color"] = color
         if size_pt is not None:
-            props["size_pt"] = size_pt
+            base["size_pt"] = size_pt
         if bold is not None:
-            props["bold"] = bold
+            base["bold"] = bold
+        stats: dict = {"by_key": {}, "fonts": {}, "no_glyph": {}}
         prefixes = (
             ("word/document.xml",)
             if parts == "body"
@@ -276,27 +360,27 @@ class HonorificsMixin:
                 "word/comments",
             )
         )
-        replaced: dict[str, int] = {}
-        restyled = 0
         total = 0
+        restyled = 0
         for part, root in list(self._trees.items()):
             if root is None or not part.startswith(prefixes) or not part.endswith(".xml"):
                 continue
             n = 0
             for p in root.iter(f"{W}p"):
                 for r in _text_runs(p):
-                    n += replace_in_run(r, matcher, props)
-            m = restyle_glyph_runs(root, props) if restyle_existing else 0
+                    n += replace_in_run(
+                        r, matcher, lambda k: resolve_glyph(k, glyph_set, fonts), base, stats
+                    )
+            m = restyle_glyph_runs(root, base) if (restyle_existing and base) else 0
             if n or m:
                 self._mark(part)
-            if n:
-                replaced[part] = n
-            restyled += m
             total += n
+            restyled += m
         return {
             "replaced": total,
-            "by_part": replaced,
-            "glyph_runs_formatted": restyled,
-            "font": font,
-            "font_has_full_set": font in FULL_COVERAGE_FONTS,
+            "glyph_set": glyph_set,
+            "by_honorific": stats["by_key"],
+            "fonts_used": stats["fonts"],
+            "left_as_text_no_glyph": stats["no_glyph"],
+            "existing_glyph_runs_restyled": restyled,
         }
