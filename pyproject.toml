@@ -25,6 +25,7 @@ dependencies = [
     "presidio-analyzer>=2.2",
     "presidio-anonymizer>=2.2",
     "spacy>=3.7,<4",
+    "resvg-py>=0.5",
 ]
 
 [project.optional-dependencies]
@@ -63,6 +64,7 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "docx_mcp/document/creation.py" = ["E501"]  # inline XML templates
 "docx_mcp/document/typography.py" = ["E501"]  # inline theme XML template
+"docx_mcp/document/vectors.py" = ["E501"]  # inline SVG markup
 "docx_mcp/document/clausediff.py" = ["E501"]  # long docstring lines
 "docx_mcp/server.py" = ["E501"]  # long docstring lines
 "tests/conftest.py" = ["E501"]  # inline XML templates

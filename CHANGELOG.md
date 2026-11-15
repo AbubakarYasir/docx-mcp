@@ -4,6 +4,22 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: vector art
+
+- `insert_svg`: SVG artwork as a native vector picture (sharp at any zoom and
+  in print in Word 2016+), stored with a PNG fallback rendered by resvg for
+  older Word, LibreOffice and previews. New dependency: `resvg-py` (prebuilt
+  wheels for Windows, macOS and Linux).
+- `insert_ornament`: generated Islamic-geometric ornaments — khatam
+  (eight-point star), rosette, shamsa medallion, divider, dotted divider,
+  corner, band — in any colour with a tinted fill.
+- `add_page_frame`: a double frame with khatam corners on every page, drawn
+  behind the text from the header so it repeats without moving the body;
+  existing header content is kept.
+- `set_page_border`: Word's line and art page borders (celtic, weave,
+  zigzag …), all pages / first / not first.
+- Checked in Microsoft Word: ornaments and frame export to PDF as vectors.
+
 ### Added: indexes and tables of contents
 
 - `mark_index_entries`: marks every occurrence of names, places or phrases as
