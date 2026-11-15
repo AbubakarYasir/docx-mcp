@@ -53,7 +53,7 @@ class ThemeMixin:
             raise ValueError(f"unknown slot '{slot}': must be one of {sorted(_VALID_SLOTS)}")
         theme = self._tree(_THEME_PATH)
         if theme is None:
-            raise RuntimeError("No theme file found in document")
+            theme = self._ensure_theme()  # documents without a theme get one
         clr_scheme = theme.find(f"{A}themeElements/{A}clrScheme")
         if clr_scheme is None:
             raise RuntimeError("Theme XML missing clrScheme element")

@@ -4,6 +4,40 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: styles, typography, honorific glyphs and themes
+
+- **Style designer** (`styledesign.py`): `define_style` creates or updates a
+  complete paragraph/character/table style in one call — Latin and Arabic
+  fonts and sizes, bold/italic for both scripts, colour, spacing (multiple,
+  exact, at-least), start/end indents, kashida justification, keep-with-next,
+  outline level, borders, shading, tabs, labels (aliases) and gallery
+  placement. `rename_style` (optionally updates every reference),
+  `organize_styles` (gallery order; hide unused styles but keep the styles
+  used ones are based on), `style_report` (usage, and repeated direct
+  formatting that should become a style), `apply_style_where` (paragraph
+  styles by pattern/current style, character styles on regex matches),
+  `clear_direct_formatting`.
+- **Rich text** (`typography.py`): `insert_rich_paragraph` / `append_rich_text`
+  build paragraphs from spans with their own fonts, sizes and colours, with
+  `{PAGE}`, `{NUMPAGES}`, `{STYLEREF:…}` and `{FIELD:…}` tokens.
+  `format_matches` formats every occurrence of a text or regex across the
+  body, notes, headers and footers.
+- **Honorifics** (`honorifics.py`): `apply_honorifics` replaces honorific
+  phrases (ignoring tashkeel and spelling variants) and bracketed
+  abbreviations — (ص) (صلعم) (رض) (رح) (ع) — with their full Unicode
+  glyphs ﷺ ﵌ ﵆ ﵁ ﵂ ﵃ ﵄ ﵅ ﵀ ﵏ ﵇ ﵈ ﵉ ﵊ ﵍ ﷻ ﷾ ﷿ ﵎ ﵋, each in a font that
+  draws it (Scheherazade New / Noto Naskh Arabic; Amiri, Traditional Arabic
+  and Sakkal Majalla only draw ﷺ) and an optional colour and size.
+  `list_honorifics` lists them.
+- **Themes**: `set_theme_fonts` (heading/body, Latin and the Arabic script
+  slot) and `apply_color_palette` (four book palettes or explicit slots).
+  Documents without a theme get one, so `set_theme_color` no longer fails.
+
+### Fixed
+
+- Saving removed the relationship to any part added in the same session
+  before it was written to disk (it looked "broken").
+
 ### Added: your name on tracked changes
 
 - `DOCX_MCP_AUTHOR` sets the name Word shows for tracked changes and comments

@@ -22,6 +22,19 @@ set_document_direction("rtl", complex_script_font="Amiri", complex_script_size_p
 English paragraphs inside it stay left-to-right. `get_direction_report` lists
 any Arabic text that is still missing direction markup.
 
+## Designing documents
+
+- **Styles first.** `define_style` builds complete styles (Arabic and Latin
+  fonts, kashida justification, borders, spacing, labels in Arabic or
+  English); `apply_style_where` applies them by pattern; `style_report` shows
+  where hand formatting should become a style; `organize_styles` tidies the
+  gallery.
+- **Several fonts in one line:** `insert_rich_paragraph` with spans.
+- **Honorifics as real glyphs:** `apply_honorifics(color="520912")` turns
+  «صلى الله عليه وسلم», «رضي الله عنهما», (رض) … into ﷺ ﵄ ﵁ in Scheherazade
+  New, coloured.
+- **Themes:** `set_theme_fonts`, `apply_color_palette("scholarly-maroon")`.
+
 ## How every change is checked
 
 1. The full upstream test suite still passes.
