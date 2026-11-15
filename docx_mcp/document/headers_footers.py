@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from .base import W, _now_iso, _preserve
+from .base import DEFAULT_AUTHOR, W, _now_iso, _preserve
 
 
 class HeadersFootersMixin:
@@ -33,7 +33,7 @@ class HeadersFootersMixin:
         old_text: str,
         new_text: str,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
         tracked: bool = True,
     ) -> dict:
         """Edit text in a header or footer with tracked changes.

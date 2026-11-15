@@ -8,7 +8,7 @@ import io
 
 from lxml import etree
 
-from .base import W14, W, _now_iso, _preserve
+from .base import DEFAULT_AUTHOR, W14, W, _now_iso, _preserve
 
 _CM_TO_TWIPS = 567
 
@@ -52,7 +52,7 @@ class TablesMixin:
         rows: int,
         cols: int,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         """Insert a new table after a paragraph with tracked insertion.
 
@@ -131,7 +131,7 @@ class TablesMixin:
         col: int,
         text: str,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
         tracked: bool = True,
     ) -> dict:
         """Modify a table cell, with tracked changes by default.
@@ -212,7 +212,7 @@ class TablesMixin:
         row_idx: int | None = None,
         cells: list[str] | None = None,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         """Add a row to a table with tracked insertion.
 
@@ -274,7 +274,7 @@ class TablesMixin:
         table_idx: int,
         row_idx: int,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         """Delete a table row with tracked changes.
 

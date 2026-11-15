@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from .base import W14, W15, W, _now_iso, _preserve
+from .base import DEFAULT_AUTHOR, W14, W15, W, _now_iso, _preserve
 
 
 class CommentsMixin:
@@ -29,7 +29,7 @@ class CommentsMixin:
         para_id: str,
         text: str,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         """Add a comment anchored to a paragraph."""
         doc = self._require("word/document.xml")
@@ -100,7 +100,7 @@ class CommentsMixin:
         parent_id: int,
         text: str,
         *,
-        author: str = "Claude",
+        author: str = DEFAULT_AUTHOR,
     ) -> dict:
         """Reply to an existing comment."""
         cm_tree = self._require("word/comments.xml")
