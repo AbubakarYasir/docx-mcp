@@ -1,6 +1,7 @@
 """DocxDocument: mixin composition and public API."""
 
 from .accessibility import AccessibilityMixin
+from .arabic import TashkilMixin
 from .base import (
     CP,
     CT,
@@ -23,7 +24,7 @@ from .base import (
     _preserve,
 )
 from .bidi import BidiMixin
-from .bookdesign import BookDesignMixin
+from .bookdesign import BookDesignMixin, EnglishBookMixin
 from .bookmarks import BookmarksMixin
 from .bookparts import BookPartsMixin
 from .captions import CaptionMixin
@@ -41,9 +42,10 @@ from .footnotes import FootnotesMixin
 from .formatting import FormattingMixin
 from .headers_footers import HeadersFootersMixin
 from .honorifics import HonorificsMixin
+from .house import HouseStyleMixin
 from .hyperlinks import HyperlinksMixin
 from .images import ImagesMixin
-from .indexing import IndexingMixin
+from .indexing import FaharisMixin, IndexingMixin
 from .lists import ListsMixin
 from .litigation import LitigationMixin
 from .markdown_export import MarkdownExportMixin
@@ -95,9 +97,13 @@ class DocxDocument(
     PageDesignMixin,
     NotesDesignMixin,
     IndexingMixin,
+    FaharisMixin,
     VectorArtMixin,
     BookDesignMixin,
     BookPartsMixin,
+    HouseStyleMixin,
+    TashkilMixin,
+    EnglishBookMixin,
     ChangeSummaryMixin,
     CommentsMixin,
     FootnotesMixin,

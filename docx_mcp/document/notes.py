@@ -243,22 +243,52 @@ class NotesDesignMixin:
     def set_note_separator(
         self,
         kind: str = "footnote",
-        style: str = "default",
+        style: str = "rule",
         *,
+        width_pct: float = 65,
         text: str = "",
-        color: str = "000000",
-        thickness_pt: float = 0.75,
+        color: str | None = None,
+        thickness_pt: float = 0.6,
         direction: str = "auto",
     ) -> dict:
-        """The separator above notes.
+        """The line above the notes.
 
-        style: "default" (Word's short rule), "full" (rule across the text
-        width, any colour and thickness), "none", or "text" (e.g. "⁂", "✽ ✽ ✽").
+        style:
+          rule     — a plain rule, width_pct of the text width, at the start
+                     side (as printed books do: 60–70 %).
+          double   — two hairlines.
+          tapered  — a rule thinning from the text edge outward (vector).
+          khatam   — hairline opening with a small eight-point star (vector).
+          diamond  — hairline with a centred diamond and end beads (vector).
+          swash    — a small calligraphic swash (vector).
+          text     — an ornament in type, e.g. "⁂" or "✽ ✽ ✽".
+          default  — Word's own short rule.  full — rule across the width.
+          none     — no separator.
+        In Word 2013+ the same line also sits above continued notes.
         """
         from .bidi import document_rtl_default
 
-        if style not in ("default", "full", "none", "text"):
-            raise ValueError("style must be default, full, none or text")
+        styles = (
+            "rule",
+            "double",
+            "tapered",
+            "khatam",
+            "diamond",
+            "swash",
+            "text",
+            "default",
+            "full",
+            "none",
+        )
+        if style not in styles:
+            raise ValueError(f"style must be one of {styles}")
+        if not 10 <= width_pct <= 100:
+            raise ValueError("width_pct must be 10–100")
+        color = (
+            color_hex(color)
+            if color
+            else (self._house("ink") if hasattr(self, "_house") else "000000")
+        )
         root = self._note_tree(kind)
         sep = _special(root, kind, "separator")
         if sep is None:
@@ -269,33 +299,61 @@ class NotesDesignMixin:
             sep.remove(c)
         if direction == "auto":
             direction = "rtl" if document_rtl_default(self._tree("word/styles.xml")) else "ltr"
+        rtl = direction == "rtl"
+        text_w = self._text_width_cm() if hasattr(self, "_text_width_cm") else 15.0
+        width = 100 if style == "full" else width_pct
+        cut_cm = round(text_w * (1 - width / 100), 2)
         p = etree.SubElement(sep, f"{W}p")
         p.set(f"{W14}paraId", self._new_para_id())
         p.set(f"{W14}textId", "77777777")
         ppr = etree.SubElement(p, f"{W}pPr")
         props: dict[str, Any] = {
-            "space_before_pt": 0,
-            "space_after_pt": 0,
+            "space_before_pt": 2,
+            "space_after_pt": 3,
             "line_spacing": 1,
             "direction": direction,
+            "alignment": "start",
         }
         if style == "default":
+            props.pop("alignment")
             r = etree.SubElement(p, f"{W}r")
             etree.SubElement(r, f"{W}separator")
-        elif style == "full":
+        elif style in ("rule", "full", "double"):
+            props["indent_end_cm"] = cut_cm
             props["border_bottom"] = {
-                "style": "single",
+                "style": "double" if style == "double" else "single",
                 "color": color,
-                "size_pt": thickness_pt,
+                "size_pt": thickness_pt * (0.75 if style == "double" else 1),
                 "space_pt": 1,
             }
+            props["line_exact_pt"] = 2
+        elif style in ("tapered", "khatam", "diamond", "swash"):
+            from . import islamic_art as ia
+
+            w_cm = text_w * width / 100
+            h_cm = 0.18 if style != "swash" else 0.32
+            art = ia.note_rule(style, "#" + color, aspect=w_cm / h_cm, rtl=rtl)
+            from .vectors import _svg_size
+
+            vw, vh = _svg_size(art)
+            r = etree.SubElement(p, f"{W}r")
+            r.append(
+                self._inline_drawing(
+                    f"word/{kind}s.xml",
+                    art,
+                    int(w_cm * 360000),
+                    int(w_cm * vh / vw * 360000),
+                    "Note separator",
+                    "",
+                )
+            )
         elif style == "text":
             props["alignment"] = "center"
-            p.append(make_run(text or "⁂", {"color": color_hex(color)}))
+            p.append(make_run(text or "⁂", {"color": color}))
         apply_para_props(ppr, props)
         self._register_special(kind, -1)
         self._mark(f"word/{kind}s.xml")
-        return {"kind": kind, "style": style}
+        return {"kind": kind, "style": style, "width_pct": width}
 
     def set_note_numbering(
         self,

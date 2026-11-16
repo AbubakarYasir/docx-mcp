@@ -178,6 +178,7 @@ class TypographyMixin:
         *,
         regex: bool = False,
         whole_word: bool = False,
+        ignore_tashkil: bool = True,
         parts: str = "all",
         **run_props: Any,
     ) -> dict:
@@ -191,12 +192,21 @@ class TypographyMixin:
             pattern: Text, or a Python regex when regex=True.
             regex: Treat pattern as a regular expression.
             whole_word: Match whole words only.
+            ignore_tashkil: Literal patterns match vocalised text too
+                («البخاري» finds «البُخَارِيُّ»).
             parts: "all" or "body".
             **run_props: Formatting keys as in insert_rich_paragraph spans.
         """
         if not run_props:
             raise ValueError("Give at least one formatting property")
-        rx_src = pattern if regex else re.escape(pattern)
+        if regex:
+            rx_src = pattern
+        elif ignore_tashkil:
+            from .arabic import loose_pattern
+
+            rx_src = loose_pattern(pattern)
+        else:
+            rx_src = re.escape(pattern)
         if whole_word:
             rx_src = rf"(?<!\w)(?:{rx_src})(?!\w)"
         rx = re.compile(rx_src)

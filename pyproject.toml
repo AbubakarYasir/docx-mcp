@@ -27,6 +27,8 @@ dependencies = [
     "spacy>=3.7,<4",
     "resvg-py>=0.5",
     "shapely>=2.0",
+    "pillow>=10",
+    "pypdf>=5",
 ]
 
 [project.optional-dependencies]

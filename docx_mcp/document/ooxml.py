@@ -39,7 +39,9 @@ ALIGNMENTS = {
     "justify": "both",
     "both": "both",
     "distribute": "distribute",
-    "kashida": "mediumKashida",
+    # Word drops whole lines of vocalised Arabic (Amiri) under medium/high
+    # kashida justification — checked in Word 365. Low kashida is safe.
+    "kashida": "lowKashida",
     "kashida-low": "lowKashida",
     "kashida-medium": "mediumKashida",
     "kashida-high": "highKashida",

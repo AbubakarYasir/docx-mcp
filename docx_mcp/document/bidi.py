@@ -308,10 +308,17 @@ def normalize_bidi(
                     chunk if chunk is not None else "".join(x.text or "" for x in run.iter(f"{W}t"))
                 )
                 if d is None:
-                    d = "r" if has_rtl(chunk) and first_strong(chunk) != "ltr" else "l"
+                    # a run of Arabic marks alone (coloured harakat) has no
+                    # strong letter but must stay RTL, or Word breaks the word
+                    marks_only = first_strong(chunk) is None and _is_arabic_script(chunk)
+                    d = (
+                        "r"
+                        if (has_rtl(chunk) and first_strong(chunk) != "ltr") or marks_only
+                        else "l"
+                    )
                     if any(char_dir(c) == "l" for c in chunk):
                         continue  # mixed run in an original paragraph: leave as is
-                if d == "r" and has_rtl(chunk):
+                if d == "r" and (has_rtl(chunk) or _is_arabic_script(chunk)):
                     changes += mark_run_rtl(run, chunk)
                 if len(pieces) > 1:
                     changes += 1

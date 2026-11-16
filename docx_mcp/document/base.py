@@ -306,6 +306,11 @@ class BaseMixin:
             "schema_order_fixed": 0,
         }
 
+        # ── House note-mark style («(١)») applies to notes added later too ──
+        hook = getattr(self, "_apply_note_mark_preference", None)
+        if hook is not None:
+            repairs["note_marks_styled"] = hook()
+
         # ── Right-to-left markup for new Arabic/Hebrew text ───────────────
         repairs["rtl_marked"] = 0
         if auto_bidi_enabled():
