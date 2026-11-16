@@ -3901,6 +3901,178 @@ def attach_template(
 
 
 @mcp.tool()
+def design_running_head(
+    style: str = "boxed",
+    title: str | None = None,
+    chapter_style: str = "Heading 1",
+    color: str = "520912",
+    font: str | None = None,
+    size_pt: float = 12,
+    bold: bool = True,
+    section_index: int | None = None,
+    document_handle: str = "",
+) -> str:
+    """Running heads as Arabic publishers set them, page number on the outer
+    side; chapter (STYLEREF) on odd pages, book title on even. style: rule;
+    boxed (number in a box, double rule); vignette (number between ornamental
+    brackets); cartouche (head on a banner cartouche, folio in a star
+    medallion at the foot)."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.design_running_head(
+            style,
+            title=title,
+            chapter_style=chapter_style,
+            color=color,
+            font=font,
+            size_pt=size_pt,
+            bold=bold,
+            section_index=section_index,
+        )
+    )
+
+
+@mcp.tool()
+def set_note_mark_style(
+    style: str = "parentheses", kind: str = "footnote", document_handle: str = ""
+) -> str:
+    """Note numbers as «(١)» in the text and the note (parentheses), «[١]»
+    (brackets) or plain. Numbers stay live; re-run after adding notes."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.set_note_mark_style(style, kind))
+
+
+@mcp.tool()
+def insert_verses(
+    verses: list,
+    after_para_id: str | None = None,
+    numbered: bool = False,
+    start_at: int = 1,
+    color: str | None = None,
+    number_color: str = "520912",
+    font: str | None = None,
+    size_pt: float | None = None,
+    bold: bool = False,
+    gap_cm: float = 1.0,
+    separator: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Poetry (nazm): two hemistichs per line, each spread across its half.
+    verses: ["صدر *** عجز", …] or [["صدر", "عجز"], …]. numbered adds «٤٨-»."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_verses(
+            verses,
+            after_para_id=after_para_id,
+            numbered=numbered,
+            start_at=start_at,
+            color=color,
+            number_color=number_color,
+            font=font,
+            size_pt=size_pt,
+            bold=bold,
+            gap_cm=gap_cm,
+            separator=separator,
+        )
+    )
+
+
+@mcp.tool()
+def add_margin_note(
+    para_id: str,
+    text: str,
+    color: str = "520912",
+    font: str | None = None,
+    size_pt: float = 9,
+    bold: bool = True,
+    width_cm: float = 1.6,
+    side: str = "outside",
+    document_handle: str = "",
+) -> str:
+    """A side heading in the margin beside a paragraph (travels with it).
+    side: outside (flips on odd/even pages), inside, left, right."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.add_margin_note(
+            para_id,
+            text,
+            color=color,
+            font=font,
+            size_pt=size_pt,
+            bold=bold,
+            width_cm=width_cm,
+            side=side,
+        )
+    )
+
+
+@mcp.tool()
+def define_numbered_style(
+    name: str,
+    template: str = "%1 .",
+    number_format: str = "decimal",
+    start_at: int = 1,
+    color: str = "520912",
+    bold: bool = True,
+    font: str | None = None,
+    size_pt: float | None = None,
+    aliases: list[str] | None = None,
+    follow: str = "space",
+    document_handle: str = "",
+) -> str:
+    """A paragraph style that numbers itself (tarajim, narrations, masa'il:
+    «١٨٨٠ . سليمان بن عمرو:»). Inserting an entry renumbers the rest.
+    template: "%1 .", "[%1]", "(%1)", "%1-"."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.define_numbered_style(
+            name,
+            template=template,
+            number_format=number_format,
+            start_at=start_at,
+            color=color,
+            bold=bold,
+            font=font,
+            size_pt=size_pt,
+            aliases=aliases,
+            follow=follow,
+        )
+    )
+
+
+@mcp.tool()
+def insert_part_title(
+    title: str,
+    after_para_id: str | None = None,
+    subtitle: str | None = None,
+    items: list[str] | None = None,
+    color: str = "520912",
+    font: str | None = None,
+    size_pt: float = 30,
+    frame: bool = True,
+    ornament: str | None = "divider",
+    document_handle: str = "",
+) -> str:
+    """A part-title page («الفهارس», «القسم الثاني»): own page, vertically
+    centred, woven frame on that page only, no running head. items: lines
+    listed under the title."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_part_title(
+            title,
+            after_para_id=after_para_id,
+            subtitle=subtitle,
+            items=items,
+            color=color,
+            font=font,
+            size_pt=size_pt,
+            frame=frame,
+            ornament=ornament,
+        )
+    )
+
+
+@mcp.tool()
 def set_update_fields_on_open(enabled: bool = True, document_handle: str = "") -> str:
     """Make Word refresh every field (TOC, index, page references, running heads) on open."""
     _, doc = _resolve(document_handle)

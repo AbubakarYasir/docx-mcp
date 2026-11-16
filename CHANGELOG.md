@@ -4,6 +4,28 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: publishing conventions from printed Arabic books
+
+Studied from seven published books (tahqiq editions, a fiqh manual, a
+rijal encyclopedia, a manasik booklet, a bilingual hadith collection):
+
+- `design_running_head`: chapter on odd pages, title on even, number on the
+  outer side — styles `boxed` (number in a box over a double rule),
+  `vignette` (number between ornamental brackets), `cartouche` (head on a
+  banner, folio in a star medallion), `rule`.
+- `set_note_mark_style`: «(١)» note marks in the text and the note, live
+  numbers kept; the separating space is set right-to-left so Word keeps it
+  beside the mark.
+- `insert_verses`: nazm with two hemistichs per line, spread across each half,
+  optional verse numbers.
+- `add_margin_note`: side headings in the outer margin, travelling with the
+  paragraph.
+- `define_numbered_style`: self-numbering entries («١٨٨٠ . سليمان بن عمرو:»).
+- `insert_part_title`: a vertically centred part-title page with a woven
+  frame on that page only (drawn from the section's header — anchored in the
+  body it stops Word centring the page, checked in Word) and no running head.
+- Identical vector art (a frame repeated in several headers) is stored once.
+
 ### Changed: production-grade Islamic ornament
 
 The first ornament set was flat primitives. Rebuilt after studying the

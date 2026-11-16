@@ -210,7 +210,22 @@ class VectorArtMixin:
         return path, rels
 
     def _store_svg(self, part: str, svg: str, width_px: int) -> tuple[str, str]:
-        """Write the SVG and its PNG fallback to word/media; return (png rId, svg rId)."""
+        """Write the SVG and its PNG fallback to word/media; return (png rId, svg rId).
+
+        Identical artwork (the same frame in every header, the same divider
+        used many times) is stored once and shared by all its references.
+        """
+        svg_bytes = svg.encode("utf-8")
+        for path, data in self._binaries.items():
+            if path.endswith(".svg") and path.startswith("word/media/vector") and data == svg_bytes:
+                svg_name = path.rsplit("/", 1)[-1]
+                png_name = svg_name[:-4] + ".png"
+                if f"word/media/{png_name}" in self._binaries:
+                    rels_path, rels = self._rels_for(part)
+                    rid_png = add_relationship(rels, "image", f"media/{png_name}")
+                    rid_svg = add_relationship(rels, "image", f"media/{svg_name}")
+                    self._mark(rels_path)
+                    return rid_png, rid_svg
         taken = {p.rsplit("/", 1)[-1] for p in self._binaries}
         if self.workdir is not None:
             media = Path(self.workdir) / "word" / "media"
