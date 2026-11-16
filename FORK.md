@@ -29,6 +29,11 @@ any Arabic text that is still missing direction markup.
   running heads, folio, footnote design and honorifics. Then write with
   styles: «باب» for chapters, «ترجمة» for sections, «رقم الحديث» for [١],
   «كلام النبي ﷺ» for the Prophet's words, `insert_separator` for ❁ ❁ ❁.
+- **Like a printed book:** `design_running_head("boxed")` (or `vignette`,
+  `cartouche`), `set_note_mark_style("parentheses")` for «(١)»,
+  `insert_verses(["صدر *** عجز", …], numbered=True)` for nazm,
+  `add_margin_note(para, "الخاتمة")`, `define_numbered_style("Tarjama Entry")`
+  for self-numbering entries, `insert_part_title("الفهارس")`.
 - **Keep it consistent:** `restrict_formatting_to_styles()` turns off hand
   formatting in Word; `set_style_pane("in-use")` keeps the Styles pane short.
 
