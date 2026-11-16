@@ -4,6 +4,66 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Added: house colours, tashkil, faharis, English books and PDF export
+
+Reworked after review of the first book designs against the printed references
+(tahqiq editions, Bulugh al-Maram in English):
+
+- **House colours instead of hard-coded maroon/red.** `set_house_colors(palette
+  | accent, secondary, ink)` with palettes drawn from the references (maroon,
+  brick, navy-gold, green-gold, teal, burgundy-silk, ink); every design tool
+  uses them when no colour is given. Colour marks structure only — reading
+  text, headings' body and note rules stay ink.
+- **Headings without boxes.** Chapter titles are typographic (centred, accent
+  colour); the old double rules above and below are gone. `insert_heading`
+  adds a design: `fleuron`, `flanked` (calligraphic brackets measured to the
+  title with real font metrics), `cartouche`, `bullet` (a small khatam for
+  sub-headings). The art is anchored, so tables of contents stay clean.
+- **Running heads:** new default `fleuron` (a hairline with a small fleuron at
+  its centre). `vignette` brackets were redrawn smaller and the number is
+  centred between them (it sat low). Book titles in heads are unvocalised.
+- **Tashkil.** `apply_book_preset(tashkil=True)` gives vocalised text "at
+  least" line spacing so harakat are never clipped; notes, references and
+  book names are unvocalised by default (`notes_tashkil="strip"`, applied
+  again on every save). New tools: `tashkil` (normalize, strip, keep-shadda,
+  light), `tashkil_report`, `color_tashkil` (Word colours diacritics
+  document-wide, so the colour is saved and applied at PDF export;
+  `per_run` for other renderers). Searching ignores harakat: `format_matches`
+  and index marking find «قال» in «قَالَ».
+- **Footnote rule:** `set_note_separator` default is a fine rule over 65 % of
+  the text width (`width_pct`), with designed styles `tapered`, `khatam`,
+  `diamond`, `swash`, `double`.
+- **Faharis.** `build_faharis` makes the closing indexes of a tahqiq book as
+  live Word indexes with page numbers: Qur'an verses, hadith atraf, people,
+  places, sources (unvocalised, sorted, numbered) and topics, after a part-title
+  page.
+- **English books** (studied from Bulugh al-Maram): presets `english` and
+  `bilingual`; `insert_hadith_entry` (Arabic «٩٤ ـــ …» then «94. Narrated …»
+  with the Prophet's words in bold and a source line), `insert_bilingual_heading`,
+  `insert_glossary_entry`; note marks `dash` («57-» in the note, superscript in
+  the text).
+- **PDF export.** `export_pdf(profile="digital" | "print")`: Microsoft Word
+  through COM on Windows (fields, indexes and contents refreshed first), else
+  LibreOffice. Print: TrimBox, bleed (default 3 mm) and crop marks, no viewer
+  scaling. Digital: bookmarks open, book spreads, right-to-left page order for
+  Arabic books, title in the viewer. Optional PDF/A. `set_pdf_preferences`
+  saves a client's wishes in the document.
+- All design methods are MCP tools with the same defaults; a test now fails if
+  one is missing or drifts.
+
+### Fixed
+
+- Medium/high kashida justification made Word drop whole lines of vocalised
+  Arabic; `kashida` now means low kashida, the safe setting (checked in Word).
+- Word draws automatic numbers (note marks, page numbers) with the computer's
+  "Numeral" option, so English books showed ١٢٣. The export sets it per book
+  (Hindi for Arabic/Urdu, Context for English) and restores it; digits at the
+  start of an English paragraph are fenced with a left-to-right mark.
+- Runs holding only harakat lost their right-to-left marking on save, which
+  broke words apart in Word.
+- `build_faharis` accepted [name, entry] pairs only in its documentation.
+- Frames sat too close to the paper edge (default margin 1.3 cm).
+
 ### Added: publishing conventions from printed Arabic books
 
 Studied from seven published books (tahqiq editions, a fiqh manual, a

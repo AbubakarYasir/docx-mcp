@@ -3070,12 +3070,16 @@ def format_matches(
     highlight: str | None = None,
     shading: str | None = None,
     char_style: str | None = None,
+    ignore_tashkil: bool = True,
     document_handle: str = "",
 ) -> str:
     """Format every occurrence of a text or regex across body, notes, headers, footers.
 
     E.g. every ﴿…﴾ verse in a Quran font (pattern "﴿[^﴾]+﴾", regex=True,
     cs_font="Amiri Quran"), every «…» bold, every name in a colour.
+    ignore_tashkil: a plain search term also finds the vocalised text
+    («قال» matches «قَالَ»), so the same words are formatted however they
+    are written.
     """
     _, doc = _resolve(document_handle)
     props = {
@@ -3096,7 +3100,14 @@ def format_matches(
         if v is not None
     }
     return _js(
-        doc.format_matches(pattern, regex=regex, whole_word=whole_word, parts=parts, **props)
+        doc.format_matches(
+            pattern,
+            regex=regex,
+            whole_word=whole_word,
+            parts=parts,
+            ignore_tashkil=ignore_tashkil,
+            **props,
+        )
     )
 
 
@@ -3356,22 +3367,27 @@ def set_note_continuation(
 @mcp.tool()
 def set_note_separator(
     kind: str = "footnote",
-    style: str = "default",
+    style: str = "rule",
+    width_pct: float = 65,
     text: str = "",
-    color: str = "000000",
-    thickness_pt: float = 0.75,
+    color: str | None = None,
+    thickness_pt: float = 0.6,
     direction: str = "auto",
     document_handle: str = "",
 ) -> str:
-    """The line above footnotes/endnotes: style default (Word's short rule),
-    full (full-width rule in any colour and thickness), none, or text (an
-    ornament such as "⁂" or "✽ ✽ ✽"). In Word 2013+ this also styles the line
-    above continued notes."""
+    """The line above footnotes/endnotes. style: rule (a fine rule over
+    width_pct of the text width, default 65), double, tapered (a calligraphic
+    line thick at the middle), khatam / diamond (a rule with a small star or
+    lozenge at its centre), swash, text (an ornament such as "⁂" or "✽ ✽ ✽"),
+    full (full width), default (Word's short rule), none. Colour defaults to
+    the house ink. In Word 2013+ this also styles the line above continued
+    notes."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.set_note_separator(
             kind,
             style,
+            width_pct=width_pct,
             text=text,
             color=color,
             thickness_pt=thickness_pt,
@@ -3618,6 +3634,8 @@ def insert_svg(
     height_cm: float | None = None,
     alignment: str = "center",
     alt_text: str = "",
+    space_before_pt: float = 6,
+    space_after_pt: float = 6,
     document_handle: str = "",
 ) -> str:
     """Insert SVG artwork (markup or a .svg path) as a native vector picture:
@@ -3632,6 +3650,8 @@ def insert_svg(
             height_cm=height_cm,
             alignment=alignment,
             alt_text=alt_text,
+            space_before_pt=space_before_pt,
+            space_after_pt=space_after_pt,
         )
     )
 
@@ -3641,7 +3661,7 @@ def insert_ornament(
     kind: str = "divider",
     after_para_id: str | None = None,
     width_cm: float | None = None,
-    color: str = "520912",
+    color: str | None = None,
     accent: str | None = None,
     points: int = 12,
     weight: float = 1.0,
@@ -3659,7 +3679,7 @@ def insert_ornament(
     ring (segmented girih ring), divider (calligraphic swash with fleuron),
     divider-dots, corner, band (style=rings | chain | hex-chain | khatam | 8 | 6),
     cartouche-lobed / cartouche-banner / cartouche-arch (color = body,
-    border = edge). color = lines, accent = fill."""
+    border = edge). color = lines, accent = fill (default: house palette)."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.insert_ornament(
@@ -3684,8 +3704,8 @@ def insert_cartouche_title(
     text: str,
     after_para_id: str | None = None,
     kind: str = "lobed",
-    color: str = "264237",
-    border: str = "b79a5b",
+    color: str | None = None,
+    border: str | None = None,
     text_color: str = "FFFFFF",
     font: str | None = None,
     size_pt: float = 18,
@@ -3697,7 +3717,7 @@ def insert_cartouche_title(
 ) -> str:
     """A title on a cartouche: real, editable Word text centred on a vector
     cartouche anchored behind it. kind: lobed (cusped label with knob, green
-    and gold by default), banner (rounded with fleuron ends), arch (pointed
+    in the house colours by default), banner (rounded with fleuron ends), arch (pointed
     ogee ends, cover style). style: paragraph style for the title (e.g.
     "Heading 1" so it appears in the TOC)."""
     _, doc = _resolve(document_handle)
@@ -3721,17 +3741,20 @@ def insert_cartouche_title(
 
 @mcp.tool()
 def add_page_frame(
-    color: str = "520912",
+    color: str | None = None,
     accent: str | None = None,
-    margin_cm: float = 0.9,
+    margin_cm: float = 1.3,
     weight: float = 1.0,
     section_index: int | None = None,
     svg: str | None = None,
+    style: str = "rings",
     document_handle: str = "",
 ) -> str:
     """Decorative frame on every page (double rule, khatam corners, side
     diamonds), drawn behind the text from the header so it repeats without
-    moving the body. Pass svg for your own frame artwork."""
+    moving the body. style: rings (interlocking guilloche with stars), chain,
+    khatam, 8. margin_cm keeps the art inside the printable safe zone.
+    Colours default to the house palette. Pass svg for your own artwork."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.add_page_frame(
@@ -3741,6 +3764,7 @@ def add_page_frame(
             weight=weight,
             section_index=section_index,
             svg=svg,
+            style=style,
         )
     )
 
@@ -3748,7 +3772,7 @@ def add_page_frame(
 @mcp.tool()
 def set_page_border(
     style: str = "double",
-    color: str = "520912",
+    color: str | None = None,
     width_pt: float = 1.5,
     space_pt: float = 24,
     measure_from: str = "page",
@@ -3783,35 +3807,54 @@ def apply_book_preset(
     preset: str = "tahqiq",
     title: str | None = None,
     author: str | None = None,
-    running_head: str = "title",
+    palette: str | None = None,
+    running_head: str | None = None,
     chapters_new_page: bool | None = None,
     justify: str = "justify",
     honorifics: bool = True,
+    tashkil: bool = True,
+    notes_tashkil: str = "strip",
+    note_separator: str = "rule",
+    note_marks: str | None = None,
     note_continuation: bool = True,
     page_numbers: str = "decimal",
     title_page: bool = True,
     overrides: dict | None = None,
     document_handle: str = "",
 ) -> str:
-    """Set up a whole Arabic/Urdu book in one call: page, margins, fonts, a
-    labelled style set (Title العنوان, Heading 1 باب, Heading 2 ترجمة,
-    Narration Number رقم الحديث, Prophetic Speech كلام النبي ﷺ, Matn, Isnad,
-    Quran, Separator فاصل, footnote text), running head (title | chapter |
-    title-chapter | none), "— page —" folio, maroon footnote rule with "="
-    continuation, honorific glyphs, fields refreshed on open. presets: tahqiq
-    (house style: Amiri 13 / Sakkal Majalla, 17×24, #520912, notes 9 pt on 15
-    pt), kitab (chapters on new pages), urdu-nastaliq. overrides: any preset
-    value, e.g. {"body_pt": 14}."""
+    """Set up a whole book in one call: page, margins, fonts, a labelled style
+    set (Title, Heading 1 باب, Heading 2 ترجمة, Narration Number, Prophetic
+    Speech ﷺ, Matn, Isnad, Quran, Separator, footnote text; English presets
+    add Arabic Text, Translation, Source, Glossary), running head, folio,
+    designed note rule, note marks, honorific glyphs, house colours.
+    preset: tahqiq (Amiri / Sakkal Majalla, 17×24), kitab (chapters on new
+    pages), urdu-nastaliq, english, bilingual (Arabic with English, as in
+    Bulugh al-Maram).
+    palette: maroon, brick, navy-gold, green-gold, teal, burgundy-silk, ink
+    (list_house_palettes). Colour marks structure; reading text stays ink.
+    running_head: fleuron, rule, boxed, vignette, cartouche, none.
+    tashkil: the body carries harakat, so line spacing is "at least" and
+    vowel marks are never clipped. notes_tashkil: strip (default — notes,
+    references and book titles are unvocalised), keep-shadda, keep.
+    note_separator: any set_note_separator style. note_marks: parentheses
+    «(١)» (Arabic default), dash «57-» (English default), brackets, plain.
+    justify: justify or kashida (low kashida; safe for vocalised text).
+    overrides: any preset value, e.g. {"body_pt": 14}."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.apply_book_preset(
             preset,
             title=title,
             author=author,
+            palette=palette,
             running_head=running_head,
             chapters_new_page=chapters_new_page,
             justify=justify,
             honorifics=honorifics,
+            tashkil=tashkil,
+            notes_tashkil=notes_tashkil,
+            note_separator=note_separator,
+            note_marks=note_marks,
             note_continuation=note_continuation,
             page_numbers=page_numbers,
             title_page=title_page,
@@ -3825,7 +3868,7 @@ def insert_separator(
     after_para_id: str | None = None,
     text: str = "❁ ❁ ❁",
     ornament: str | None = None,
-    color: str = "520912",
+    color: str | None = None,
     document_handle: str = "",
 ) -> str:
     """Section separator after a paragraph: text (❁ ❁ ❁, ✽ ✽ ✽, ⁂) in the
@@ -3902,10 +3945,10 @@ def attach_template(
 
 @mcp.tool()
 def design_running_head(
-    style: str = "boxed",
+    style: str = "fleuron",
     title: str | None = None,
     chapter_style: str = "Heading 1",
-    color: str = "520912",
+    color: str | None = None,
     font: str | None = None,
     size_pt: float = 12,
     bold: bool = True,
@@ -3913,10 +3956,11 @@ def design_running_head(
     document_handle: str = "",
 ) -> str:
     """Running heads as Arabic publishers set them, page number on the outer
-    side; chapter (STYLEREF) on odd pages, book title on even. style: rule;
-    boxed (number in a box, double rule); vignette (number between ornamental
+    side; chapter (STYLEREF) on odd pages, book title on even. style:
+    fleuron (a fine ink rule with a small fleuron at its centre, default);
+    rule; boxed (number in a box, double rule); vignette (number between ornamental
     brackets); cartouche (head on a banner cartouche, folio in a star
-    medallion at the foot)."""
+    medallion at the foot). Colours default to the house palette."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.design_running_head(
@@ -3949,16 +3993,18 @@ def insert_verses(
     numbered: bool = False,
     start_at: int = 1,
     color: str | None = None,
-    number_color: str = "520912",
+    number_color: str | None = None,
     font: str | None = None,
     size_pt: float | None = None,
     bold: bool = False,
     gap_cm: float = 1.0,
     separator: str | None = None,
+    width_pct: float = 80,
     document_handle: str = "",
 ) -> str:
     """Poetry (nazm): two hemistichs per line, each spread across its half.
-    verses: ["صدر *** عجز", …] or [["صدر", "عجز"], …]. numbered adds «٤٨-»."""
+    verses: ["صدر *** عجز", …] or [["صدر", "عجز"], …]. numbered adds «٤٨-». width_pct: how much of the line
+    the couplet spans (80 keeps the halves close, as printed)."""
     _, doc = _resolve(document_handle)
     return _js(
         doc.insert_verses(
@@ -3973,15 +4019,306 @@ def insert_verses(
             bold=bold,
             gap_cm=gap_cm,
             separator=separator,
+            width_pct=width_pct,
         )
     )
+
+
+# ── House colours, tashkil, headings, faharis, English books, PDF ─────────────
+
+
+@mcp.tool()
+def list_house_palettes(document_handle: str = "") -> str:
+    """House colour palettes for books (accent for structure, secondary for
+    ornament, ink for text and rules), drawn from printed Arabic and English
+    Islamic books: maroon, brick, navy-gold, green-gold, teal, burgundy-silk,
+    ink."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.list_house_palettes())
+
+
+@mcp.tool()
+def set_house_colors(
+    palette: str | None = None,
+    accent: str | None = None,
+    secondary: str | None = None,
+    ink: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Set the document's house colours — every design tool (headings, running
+    heads, frames, ornaments, note rules, separators, verses) uses them when no
+    colour is given. Pick a palette and/or give hex colours to match a
+    client's brand or a reference book. Also sets theme accent1/accent2/dk2."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.set_house_colors(palette, accent=accent, secondary=secondary, ink=ink))
+
+
+@mcp.tool()
+def get_house_colors(document_handle: str = "") -> str:
+    """The document's current house colours (accent, secondary, ink)."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.get_house_colors())
+
+
+@mcp.tool()
+def list_ornaments(document_handle: str = "") -> str:
+    """The vector ornaments insert_ornament can draw."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.list_ornaments())
+
+
+@mcp.tool()
+def list_palettes(document_handle: str = "") -> str:
+    """Built-in theme palettes for apply_color_palette."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.list_palettes())
+
+
+@mcp.tool()
+def insert_heading(
+    text: str,
+    level: int = 1,
+    after_para_id: str | None = None,
+    design: str = "plain",
+    color: str | None = None,
+    ornament_width_pct: float = 30,
+    document_handle: str = "",
+) -> str:
+    """A chapter/section heading in the book's heading style (stays in the
+    table of contents, no art copied into it). design: plain; fleuron (a small
+    fleuron rule under the heading); flanked (calligraphic brackets drawn
+    either side of the measured title); cartouche; bullet (a small khatam at
+    the start, for sub-headings). Colour defaults to the house accent."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_heading(
+            text,
+            level=level,
+            after_para_id=after_para_id,
+            design=design,
+            color=color,
+            ornament_width_pct=ornament_width_pct,
+        )
+    )
+
+
+@mcp.tool()
+def tashkil(
+    mode: str = "normalize",
+    parts: str = "all",
+    para_ids: list[str] | None = None,
+    document_handle: str = "",
+) -> str:
+    """Work on the harakat (tashkil) already in the text. mode: normalize
+    (canonical order of shadda and vowels, stray marks removed), strip (remove
+    all harakat — e.g. for references and book titles in the notes),
+    keep-shadda (remove all but shadda), light (drop case endings, keep the
+    word-internal vowels). parts: body, notes, headers, all; or para_ids."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.tashkil(mode, parts=parts, para_ids=para_ids))
+
+
+@mcp.tool()
+def tashkil_report(parts: str = "all", document_handle: str = "") -> str:
+    """How vocalised each part is: harakat count, share of Arabic letters
+    carrying a mark, and paragraphs that are fully, partly or not vocalised —
+    to check a manuscript before typesetting."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.tashkil_report(parts))
+
+
+@mcp.tool()
+def color_tashkil(
+    color: str | None = None,
+    parts: str = "body",
+    para_ids: list[str] | None = None,
+    per_run: bool = False,
+    document_handle: str = "",
+) -> str:
+    """Draw the harakat in their own colour (as in teaching Qur'ans and
+    vocalised matn), letters unchanged. Word colours diacritics with one
+    colour for the whole document: the colour is saved in the document and
+    export_pdf shows it in the PDF (in Word, File > Options > Advanced >
+    "Use this color for diacritics" shows it on screen). per_run also colours
+    marks run by run for LibreOffice and other renderers. Colour defaults to
+    the house accent; color="auto" removes it."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.color_tashkil(color, parts=parts, para_ids=para_ids, per_run=per_run))
+
+
+@mcp.tool()
+def build_faharis(
+    after_para_id: str | None = None,
+    include: list[str] | None = None,
+    people: list | None = None,
+    places: list | None = None,
+    sources: list[str] | None = None,
+    part_title: str | None = "الفهارس",
+    tarf_words: int = 6,
+    heading_design: str = "fleuron",
+    columns_people: int = 2,
+    document_handle: str = "",
+) -> str:
+    """The indexes (الفهارس) at the end of a tahqiq book, each a live Word index
+    with page numbers: quran (verses, from the Quran style / ﴿﴾), hadith
+    (atraf: first words of each narration, from Prophetic Speech/Matn), people
+    (الأعلام), places (الأماكن والبلدان), sources (المصادر والمراجع —
+    unvocalised, sorted, numbered) and topics (الموضوعات — the table of
+    contents). include picks and orders them. people / places: names to find
+    in the text (tashkil-insensitive), or [name, entry] pairs. Starts with a
+    part-title page unless part_title is None."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.build_faharis(
+            after_para_id=after_para_id,
+            include=include,
+            people=people,
+            places=places,
+            sources=sources,
+            part_title=part_title,
+            tarf_words=tarf_words,
+            heading_design=heading_design,
+            columns_people=columns_people,
+        )
+    )
+
+
+@mcp.tool()
+def insert_hadith_entry(
+    number: int | str,
+    arabic: str,
+    english: str,
+    after_para_id: str | None = None,
+    bold_quotes: bool = True,
+    source: str | None = None,
+    arabic_number_dash: str = " ـــ ",
+    document_handle: str = "",
+) -> str:
+    """One narration as set in Bulugh al-Maram (English): the Arabic text
+    right-to-left with its number «٩٤ ـــ», then the English translation
+    «94. Narrated …» with the Prophet's words in bold (bold_quotes), then an
+    optional source line («Related by …»). Use after apply_book_preset
+    ("bilingual" or "english")."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_hadith_entry(
+            number,
+            arabic,
+            english,
+            after_para_id=after_para_id,
+            bold_quotes=bold_quotes,
+            source=source,
+            arabic_number_dash=arabic_number_dash,
+        )
+    )
+
+
+@mcp.tool()
+def insert_bilingual_heading(
+    arabic: str,
+    english: str,
+    level: int = 1,
+    after_para_id: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """A heading in Arabic above its English form («كتاب الطهارة» /
+    «Book 1: Purification»); only the English line enters the table of
+    contents."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.insert_bilingual_heading(arabic, english, level=level, after_para_id=after_para_id)
+    )
+
+
+@mcp.tool()
+def insert_glossary_entry(
+    term: str,
+    definition: str,
+    after_para_id: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """A glossary entry for English Islamic books: bold term, italic
+    definition, hanging indent."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.insert_glossary_entry(term, definition, after_para_id=after_para_id))
+
+
+@mcp.tool()
+def export_pdf(
+    output_path: str,
+    profile: str = "digital",
+    engine: str = "auto",
+    numerals: str | None = None,
+    bleed_mm: float | None = None,
+    crop_marks: bool | None = None,
+    pdfa: bool | None = None,
+    two_page: bool | None = None,
+    update_fields: bool = True,
+    document_handle: str = "",
+) -> str:
+    """Export a print-ready or digital-ready PDF.
+
+    profile: digital — screen-optimised, heading bookmarks open, links kept,
+    book spreads, right-to-left page order for Arabic/Urdu books. print —
+    print-optimised, TrimBox at the page edge, bleed (default 3 mm) and crop
+    marks, no viewer scaling. engine: auto (Microsoft Word when available —
+    fields, indexes and contents refreshed first — else LibreOffice), word,
+    libreoffice. numerals: how Word draws note and page numbers (hindi «١٢٣»
+    for Arabic books, context for English; default from the book preset).
+    pdfa: archival PDF/A. Unset options follow set_pdf_preferences."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.export_pdf(
+            output_path,
+            profile,
+            engine=engine,
+            numerals=numerals,
+            bleed_mm=bleed_mm,
+            crop_marks=crop_marks,
+            pdfa=pdfa,
+            two_page=two_page,
+            update_fields=update_fields,
+        )
+    )
+
+
+@mcp.tool()
+def set_pdf_preferences(
+    bleed_mm: float | None = None,
+    crop_marks: bool | None = None,
+    pdfa: bool | None = None,
+    two_page: bool | None = None,
+    numerals: str | None = None,
+    document_handle: str = "",
+) -> str:
+    """Save a client's PDF wishes in the document so every export follows them:
+    print bleed in mm, crop marks, PDF/A, spreads in the digital view, numeral
+    shapes (hindi, arabic, context, system). Page size and margins are set with
+    set_book_layout / set_page_margins."""
+    _, doc = _resolve(document_handle)
+    return _js(
+        doc.set_pdf_preferences(
+            bleed_mm=bleed_mm,
+            crop_marks=crop_marks,
+            pdfa=pdfa,
+            two_page=two_page,
+            numerals=numerals,
+        )
+    )
+
+
+@mcp.tool()
+def get_pdf_preferences(document_handle: str = "") -> str:
+    """The PDF preferences saved in the document."""
+    _, doc = _resolve(document_handle)
+    return _js(doc.get_pdf_preferences())
 
 
 @mcp.tool()
 def add_margin_note(
     para_id: str,
     text: str,
-    color: str = "520912",
+    color: str | None = None,
     font: str | None = None,
     size_pt: float = 9,
     bold: bool = True,
@@ -4012,7 +4349,7 @@ def define_numbered_style(
     template: str = "%1 .",
     number_format: str = "decimal",
     start_at: int = 1,
-    color: str = "520912",
+    color: str | None = None,
     bold: bool = True,
     font: str | None = None,
     size_pt: float | None = None,
@@ -4046,7 +4383,7 @@ def insert_part_title(
     after_para_id: str | None = None,
     subtitle: str | None = None,
     items: list[str] | None = None,
-    color: str = "520912",
+    color: str | None = None,
     font: str | None = None,
     size_pt: float = 30,
     frame: bool = True,

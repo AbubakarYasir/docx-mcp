@@ -148,7 +148,12 @@ class IndexingMixin:
                 raise ValueError("Each term needs text")
             typ = spec.get("index_type", index_type)
             _check_type(typ)
-            src = text if spec.get("regex") else re.escape(text)
+            if spec.get("regex"):
+                src = text
+            else:
+                from .arabic import loose_pattern
+
+                src = loose_pattern(text)
             if whole_word:
                 # Allow attached Arabic proclitics before the word.
                 src = rf"(?<![\w])(?:[وفبلك]{{0,2}})(?:{src})(?![\w])"
@@ -197,7 +202,11 @@ class IndexingMixin:
             pos = 0
             for m in matches:
                 found = m.group(0)
-                entry = spec.get("entry") or _strip_proclitic(found, spec.get("text", ""))
+                entry = spec.get("entry") or (
+                    spec["text"]
+                    if not spec.get("regex") and spec.get("text")
+                    else _strip_proclitic(found, spec.get("text", ""))
+                )
                 instr = _xe_instr(
                     entry,
                     spec.get("subentry"),
@@ -781,3 +790,266 @@ def _style_by_name_or_id(styles: etree._Element, key: str) -> etree._Element | N
         if nm is not None and (nm.get(f"{W}val") or "").lower() == lo:
             return st
     return None
+
+
+# ── the complete faharis ────────────────────────────────────────────────
+
+_SURAH_REF = re.compile(r"\[\s*([؀-ۿ ]+?)\s*:\s*([\d٠-٩\-–]+)\s*\]")
+
+
+def _words(text: str, n: int) -> str:
+    ws = text.split()
+    return " ".join(ws[:n]) + (" …" if len(ws) > n else "")
+
+
+class FaharisMixin:
+    """فهارس built from the book's own styles."""
+
+    def _style_ids(self, names: list[str], kind: str) -> set[str]:
+        out = set()
+        for n in names:
+            sid = self._style_id_for(n, kind)
+            if sid:
+                out.add(sid)
+        return out
+
+    def _mark_styled_runs(
+        self, style_ids: set[str], index_type: str, entry_fn, parts=("word/document.xml",)
+    ) -> int:
+        """XE-mark each stretch of consecutive runs carrying one of the
+        character styles; entry_fn(text, paragraph_text) -> entry or None."""
+        n = 0
+        for part in parts:
+            root = self._tree(part)
+            if root is None:
+                continue
+            for p in root.iter(f"{W}p"):
+                ptext = "".join(t.text or "" for t in p.iter(f"{W}t"))
+                group: list[etree._Element] = []
+                runs = [r for r in p if r.tag == f"{W}r"]
+                runs.append(None)
+                for r in runs:
+                    rs = r.find(f"{W}rPr/{W}rStyle") if r is not None else None
+                    if rs is not None and rs.get(f"{W}val") in style_ids:
+                        group.append(r)
+                        continue
+                    if group:
+                        text = "".join(t.text or "" for g in group for t in g.iter(f"{W}t"))
+                        entry = entry_fn(text.strip(), ptext)
+                        if entry:
+                            instr = _xe_instr(entry, None, None, index_type, False, False)
+                            prev = group[-1]
+                            for xr in _xe_runs(instr, has_rtl(entry)):
+                                prev.addnext(xr)
+                                prev = xr
+                            n += 1
+                        group = []
+            if n:
+                self._mark(part)
+        return n
+
+    def build_faharis(
+        self,
+        *,
+        after_para_id: str | None = None,
+        include: list[str] | None = None,
+        people: list | None = None,
+        places: list | None = None,
+        sources: list[str] | None = None,
+        part_title: str | None = "الفهارس",
+        tarf_words: int = 6,
+        heading_design: str = "fleuron",
+        columns_people: int = 2,
+    ) -> dict:
+        """Build the فهارس at the end of the book, collected from its own
+        styles — re-run after editing; Word fills the page numbers.
+
+        include (in this order): quran (فهرس الآيات — runs in the Quran
+        style, with their [سورة: آية] reference), hadith (فهرس أطراف
+        الأحاديث — the opening words of runs in Prophetic Speech / Matn),
+        people (فهرس الأعلام — the people list, plus the names of
+        self-numbering entries), places (فهرس الأماكن), sources (فهرس
+        المصادر والمراجع — the list given, sorted), topics (فهرس
+        الموضوعات — the table of contents).
+        """
+
+        def as_terms(items):
+            # names, or [name, entry] pairs (the text to find, the index wording)
+            out = []
+            for it in items or []:
+                if isinstance(it, (list, tuple)):
+                    out.append({"text": it[0], "entry": it[1] if len(it) > 1 else it[0]})
+                else:
+                    out.append(it)
+            return out
+
+        people, places = as_terms(people), as_terms(places)
+        include = include or ["quran", "hadith", "people", "places", "sources", "topics"]
+        known = {"quran", "hadith", "people", "places", "sources", "topics"}
+        bad = set(include) - known
+        if bad:
+            raise ValueError(f"unknown faharis: {sorted(bad)}; choose from {sorted(known)}")
+        from .arabic import strip_tashkil
+
+        # 1. clear earlier automatic marks so re-running stays clean
+        for typ in ("Q", "H", "P", "L"):
+            self.remove_index_entries(index_type=typ)
+        made: dict[str, int] = {}
+        if "quran" in include:
+            q_ids = self._style_ids(["Quran"], "character")
+
+            def q_entry(text, ptext):
+                t = strip_tashkil(text).strip("﴿﴾ ")
+                if not t:
+                    return None
+                ref = ""
+                m = _SURAH_REF.search(
+                    ptext[ptext.find(text[:10]) :] if text[:10] in ptext else ptext
+                )
+                if m:
+                    ref = f" [{m.group(1).strip()}: {m.group(2)}]"
+                return _words(t, tarf_words) + ref
+
+            made["quran"] = self._mark_styled_runs(q_ids, "Q", q_entry)
+        if "hadith" in include:
+            h_ids = self._style_ids(["Prophetic Speech", "Matn"], "character")
+
+            def h_entry(text, _p):
+                t = strip_tashkil(text).strip("«»\"' ")
+                return _words(t, tarf_words) if len(t.split()) >= 2 else None
+
+            made["hadith"] = self._mark_styled_runs(h_ids, "H", h_entry)
+        if "people" in include:
+            n = 0
+            if people:
+                n += self.mark_index_entries(people, index_type="P")["marked"]
+            numbering = self._tree("word/numbering.xml")
+            styles = self._require("word/styles.xml")
+            numbered = {
+                s.get(f"{W}styleId")
+                for s in styles.findall(f"{W}style")
+                if s.find(f"{W}pPr/{W}numPr") is not None
+                and s.get(f"{W}type") == "paragraph"
+                and not (s.find(f"{W}name").get(f"{W}val") or "")
+                .lower()
+                .startswith(("heading", "list", "toc"))
+            }
+            _ = numbering
+            doc = self._require("word/document.xml")
+            for p in doc.iter(f"{W}p"):
+                ps = p.find(f"{W}pPr/{W}pStyle")
+                if ps is None or ps.get(f"{W}val") not in numbered:
+                    continue
+                text = strip_tashkil("".join(t.text or "" for t in p.iter(f"{W}t")))
+                name = text.split(":")[0].strip()
+                if name and len(name.split()) <= 10:
+                    instr = _xe_instr(name, None, None, "P", True, False)
+                    p.extend(_xe_runs(instr, has_rtl(name)))
+                    n += 1
+            if n:
+                self._mark("word/document.xml")
+            made["people"] = n
+        if "places" in include and places:
+            made["places"] = self.mark_index_entries(places, index_type="L")["marked"]
+
+        # 2. the pages
+        anchor = after_para_id
+        if part_title:
+            r = self.insert_part_title(
+                part_title,
+                after_para_id=anchor,
+                items=[_FAHARIS_TITLES[k] for k in include if k != "places" or places],
+            )
+            anchor = r["after_para_id"]
+        built = []
+        for key in include:
+            if key == "places" and not places:
+                continue
+            if key == "sources" and not sources:
+                continue
+            h = self.insert_heading(
+                _FAHARIS_TITLES[key], level=1, after_para_id=anchor, design=heading_design
+            )
+            anchor = h["after_para_id"]
+            doc = self._require("word/document.xml")
+            hp = self._find_para(doc, h["para_id"])
+            ppr = hp.find(f"{W}pPr")
+            pbb = ppr.find(f"{W}pageBreakBefore")
+            if pbb is None:
+                pbb = etree.SubElement(ppr, f"{W}pageBreakBefore")
+            pbb.set(f"{W}val", "1" if built else "0")
+            if key in ("quran", "hadith", "people", "places"):
+                typ = {"quran": "Q", "hadith": "H", "people": "P", "places": "L"}[key]
+                r = self.insert_index(
+                    after_para_id=anchor,
+                    index_type=typ,
+                    new_page=False,
+                    columns=columns_people if key in ("people", "places") else 1,
+                    letter_headings=key in ("people", "places"),
+                    heading_color=self._house("accent"),
+                )
+                anchor = self._last_para_of_field(r["para_id"])
+            elif key == "sources":
+                anchor = self._insert_sources(sources, anchor)
+            elif key == "topics":
+                r = self.insert_toc(
+                    after_para_id=anchor,
+                    levels="1-3",
+                    new_page=False,
+                    level1_color=self._house("accent"),
+                )
+                anchor = self._last_para_of_field(r["para_id"])
+            built.append(key)
+        end = self.insert_ornament("divider-dots", after_para_id=anchor)
+        self.set_update_fields_on_open(True)
+        return {"built": built, "marked": made, "last_para_id": end["para_id"]}
+
+    def _last_para_of_field(self, first_pid: str) -> str:
+        doc = self._require("word/document.xml")
+        p = self._find_para(doc, first_pid)
+        depth = 0
+        while p is not None:
+            for fc in p.iter(f"{W}fldChar"):
+                t = fc.get(f"{W}fldCharType")
+                depth += 1 if t == "begin" else -1 if t == "end" else 0
+            if depth <= 0:
+                return p.get(f"{W14}paraId")
+            p = p.getnext()
+            while p is not None and p.tag != f"{W}p":
+                p = p.getnext()
+        return first_pid
+
+    def _insert_sources(self, sources: list[str], anchor: str) -> str:
+        from .arabic import strip_tashkil
+
+        sid = self.define_style(
+            "Source Entry",
+            "paragraph",
+            based_on="Normal",
+            aliases=["مصدر"],
+            paragraph={
+                "first_line_cm": 0,
+                "hanging_cm": 0.7,
+                "space_after_pt": 3,
+                "alignment": "justify",
+            },
+        )["style_id"]
+        # references are printed without tashkil
+        ordered = sorted((strip_tashkil(s) for s in sources), key=_sort_key)
+        digits = "٠١٢٣٤٥٦٧٨٩"
+        rtl = self._is_rtl() if hasattr(self, "_is_rtl") else True
+        for i, src in enumerate(ordered, 1):
+            num = "".join(digits[int(c)] for c in str(i)) if rtl else str(i)
+            p = self.insert_paragraph(anchor, f"{num}. {src}", style=sid)
+            anchor = p["para_id"]
+        return anchor
+
+
+_FAHARIS_TITLES = {
+    "quran": "فهرس الآيات القرآنية",
+    "hadith": "فهرس أطراف الأحاديث والآثار",
+    "people": "فهرس الأعلام",
+    "places": "فهرس الأماكن والبلدان",
+    "sources": "فهرس المصادر والمراجع",
+    "topics": "فهرس الموضوعات",
+}

@@ -461,7 +461,7 @@ class VectorArtMixin:
         *,
         after_para_id: str | None = None,
         width_cm: float | None = None,
-        color: str = "520912",
+        color: str | None = None,
         accent: str | None = None,
         points: int = 12,
         weight: float = 1.0,
@@ -480,6 +480,9 @@ class VectorArtMixin:
         """
         if kind == "frame":
             raise ValueError("Use add_page_frame for a page frame")
+        color = self._c(color)
+        if kind.startswith("cartouche"):
+            border = self._c(border, "secondary")
         text_w = self._text_width_cm() if hasattr(self, "_text_width_cm") else 15.0
         if width_cm is None:
             width_cm = {"divider": text_w * 0.6, "divider-dots": text_w * 0.45, "band": text_w}.get(
@@ -514,8 +517,8 @@ class VectorArtMixin:
         *,
         after_para_id: str | None = None,
         kind: str = "lobed",
-        color: str = "264237",
-        border: str = "b79a5b",
+        color: str | None = None,
+        border: str | None = None,
         text_color: str = "FFFFFF",
         font: str | None = None,
         size_pt: float = 18,
@@ -533,6 +536,8 @@ class VectorArtMixin:
         from .bidi import has_rtl
         from .ooxml import make_paragraph, make_run
 
+        color = self._c(color)
+        border = self._c(border, "secondary")
         if kind not in ("lobed", "banner", "arch"):
             raise ValueError("kind must be lobed, banner or arch")
         text_w = self._text_width_cm() if hasattr(self, "_text_width_cm") else 15.0
@@ -616,9 +621,9 @@ class VectorArtMixin:
     def add_page_frame(
         self,
         *,
-        color: str = "520912",
+        color: str | None = None,
         accent: str | None = None,
-        margin_cm: float = 0.9,
+        margin_cm: float = 1.3,
         weight: float = 1.0,
         section_index: int | None = None,
         svg: str | None = None,
@@ -633,6 +638,7 @@ class VectorArtMixin:
         Existing headers keep their content; first-page and even-page headers
         get the frame too. Pass your own svg to use custom artwork.
         """
+        color = self._c(color)
         doc = self._require("word/document.xml")
         sects = (
             self._pick_sections(section_index)
@@ -716,7 +722,7 @@ class VectorArtMixin:
         self,
         style: str = "double",
         *,
-        color: str = "520912",
+        color: str | None = None,
         width_pt: float = 1.5,
         space_pt: float = 24,
         measure_from: str = "page",
@@ -734,6 +740,7 @@ class VectorArtMixin:
                 from the text ("text"), 0–31 pt.
             pages: all, first, not-first.
         """
+        color = self._c(color)
         if style != "none" and style not in PAGE_BORDER_STYLES:
             raise ValueError(f"style must be one of {sorted(PAGE_BORDER_STYLES)} or none")
         if measure_from not in ("page", "text"):

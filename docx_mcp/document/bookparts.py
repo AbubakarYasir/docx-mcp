@@ -33,7 +33,6 @@ from .ooxml import (
     W14,
     W,
     apply_para_props,
-    color_hex,
     content_runs,
     make_paragraph,
     make_run,
@@ -45,7 +44,7 @@ WPS = "{http://schemas.microsoft.com/office/word/2010/wordprocessingShape}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 EMU_PER_CM = 360000
 
-HEAD_STYLES = ("rule", "boxed", "vignette", "cartouche")
+HEAD_STYLES = ("fleuron", "rule", "boxed", "vignette", "cartouche")
 
 
 def _bracket_svg(color: str, side: str) -> str:
@@ -122,11 +121,11 @@ class BookPartsMixin:
 
     def design_running_head(
         self,
-        style: str = "boxed",
+        style: str = "fleuron",
         *,
         title: str | None = None,
         chapter_style: str = "Heading 1",
-        color: str = "520912",
+        color: str | None = None,
         font: str | None = None,
         size_pt: float = 12,
         bold: bool = True,
@@ -138,6 +137,9 @@ class BookPartsMixin:
         number; even pages: the book title and the number.
 
         style:
+          fleuron   — title inner, number outer, a hairline below with a small
+                      fleuron at its centre (as in «أصول الفقه على منهج أهل
+                      السنة»). The default.
           rule      — text and number over a thin rule.
           boxed     — number in a small box, double rule below (as in
                       «الرد القويم»).
@@ -146,10 +148,11 @@ class BookPartsMixin:
           cartouche — the head centred on a banner cartouche, and the folio
                       in a star medallion at the foot (as in «مناسك الحج»).
         """
+        color = self._c(color, "accent")
         if style not in HEAD_STYLES:
             raise ValueError(f"style must be one of {HEAD_STYLES}")
         rtl = self._is_rtl()
-        c = color_hex(color) or "520912"
+        c = color
         book = title or "{TITLE}"
         chap = "{STYLEREF:" + chapter_style + "}"
         base: dict[str, Any] = {"size_pt": size_pt, "bold": bold}
@@ -188,14 +191,21 @@ class BookPartsMixin:
             "space_before_pt": 0,
             "tabs": [{"align": "end", "pos_cm": round(width_cm, 2)}],
         }
-        rule = (
-            {"style": "double", "color": color, "size_pt": 0.75, "space_pt": 3}
-            if style == "boxed"
-            else {"style": "single", "color": color, "size_pt": 0.75, "space_pt": 3}
-        )
+        ink = self._house("ink")
+        if style == "boxed":
+            rule = {"style": "double", "color": color, "size_pt": 0.75, "space_pt": 3}
+        else:
+            rule = {
+                "style": "single",
+                "color": ink if style == "fleuron" else color,
+                "size_pt": 0.5,
+                "space_pt": 3,
+            }
         props["border_bottom"] = rule
         p = make_paragraph(self._new_para_id(), props)
-        text_runs = content_runs(text, {**base, "color": "000000"})
+        if style == "fleuron":
+            self._fleuron_on_rule(part, p, base, color, width_cm)
+        text_runs = content_runs(text, {**base, "color": ink})
         num_runs = self._folio_runs(part, style, base, color)
         # odd (default): text at start, number at end (outer side for RTL and
         # LTR odd pages); even: number at start, text at end.
@@ -206,6 +216,52 @@ class BookPartsMixin:
         for r in second:
             p.append(r)
         return p
+
+    def _fleuron_on_rule(self, part, p, base, color, width_cm):
+        """A small fleuron centred on the head's bottom rule, on a white patch
+        so it interrupts the line."""
+        from shapely.geometry import box as sbox
+
+        f = ia.fleuron("#" + color)
+        minx, miny, maxx, maxy = f.bounds
+        pad = 2.5
+        patch = sbox(minx - pad, miny, maxx + pad, maxy)
+        body = ia.fill(patch, "#ffffff") + ia.fill(f, "#" + color)
+        from shapely import affinity
+
+        w, h = maxx - minx + 2 * pad, maxy - miny
+        art = ia.svg(w, h, f'<g transform="translate({-minx + pad:.2f},{-miny:.2f})">{body}</g>')
+        h_cm = 0.42
+        w_cm = h_cm * w / h
+        line_pt = base["size_pt"] * 1.25
+        # the rule sits under the text line plus its 3 pt border space
+        rule_pt = line_pt + 3 + 0.5
+        run = etree.Element(f"{W}r")
+        drawing = self._anchor_drawing(
+            part,
+            art,
+            int(w_cm * EMU_PER_CM),
+            int(h_cm * EMU_PER_CM),
+            0,
+            0,
+            "Head fleuron",
+            behind=False,
+        )
+        an = drawing.find(f"{WP}anchor")
+        ph = an.find(f"{WP}positionH")
+        ph.set("relativeFrom", "margin")
+        for ch in list(ph):
+            ph.remove(ch)
+        etree.SubElement(ph, f"{WP}align").text = "center"
+        pv = an.find(f"{WP}positionV")
+        pv.set("relativeFrom", "paragraph")
+        pv.find(f"{WP}posOffset").text = str(
+            int(rule_pt / 72 * 2.54 * EMU_PER_CM - h_cm * EMU_PER_CM / 2)
+        )
+        run.append(drawing)
+        ppr = p.find(f"{W}pPr")
+        p.insert(list(p).index(ppr) + 1, run)
+        _ = affinity
 
     def _folio_runs(self, part, style, base, color):
         runs = content_runs("{PAGE}", {**base, "color": color})
@@ -223,12 +279,19 @@ class BookPartsMixin:
                 bdr.set(f"{W}space", "1")
                 bdr.set(f"{W}color", color)
         elif style == "vignette":
-            h_cm = 0.62
+            # brackets about the digits' height, lowered so their middle sits
+            # on the digits' middle (an inline picture stands on the baseline)
+            size = base.get("size_pt", 12)
+            h_pt = size * 0.95
+            h_cm = h_pt / 72 * 2.54
+            drop_half_pts = round((h_pt - size * 0.62) / 2 * 2)
             out = []
             for side in ("right", "left"):
                 svg = _bracket_svg("#" + color, side)
                 vw, vh = svg_size(svg)
                 r = etree.Element(f"{W}r")
+                rpr = etree.SubElement(r, f"{W}rPr")
+                etree.SubElement(rpr, f"{W}position").set(f"{W}val", str(-drop_half_pts))
                 r.append(
                     self._inline_drawing(
                         part,
@@ -292,21 +355,32 @@ class BookPartsMixin:
     # ── note marks ──────────────────────────────────────────────────────
 
     def set_note_mark_style(self, style: str = "parentheses", kind: str = "footnote") -> dict:
-        """Note numbers as «(١)» in the text and in the note — the Arabic
-        publishing convention. Word has no such number format, so the live
-        reference is wrapped in parenthesis runs (re-run after adding notes;
-        it skips marks already wrapped). style: parentheses, brackets, plain.
+        """How note numbers look, keeping them live Word notes.
+
+        style:
+          parentheses — «(١)» in the text and «(١)» in the note (Arabic books).
+          brackets    — «[١]».
+          dash        — a plain superscript in the text, «57-» in the note
+                        (English translations, e.g. Bulugh al-Maram).
+          plain       — Word's superscript number in both.
+        Applied again on every save when set by the book preset, so notes
+        added later follow it.
         """
-        if style not in ("parentheses", "brackets", "plain"):
-            raise ValueError("style must be parentheses, brackets or plain")
+        styles = {
+            "parentheses": (("(", ")"), ("(", ") ")),
+            "brackets": (("[", "]"), ("[", "] ")),
+            "dash": (("", ""), ("", "- ")),
+            "plain": (("", ""), ("", " ")),
+        }
+        if style not in styles:
+            raise ValueError(f"style must be one of {sorted(styles)}")
         if kind not in ("footnote", "endnote"):
             raise ValueError("kind must be footnote or endnote")
-        opening, closing = {"parentheses": ("(", ")"), "brackets": ("[", "]"), "plain": ("", "")}[
-            style
-        ]
         rtl_doc = self._is_rtl()
         tag_ref = f"{W}{kind}Reference"
         tag_mark = f"{W}{kind}Ref"
+        opens = {"(", "[", "\u200e(", "\u200e[", "\u200e"}
+        closes = {")", "]", "-"}
         done = 0
 
         def text_of(r) -> str | None:
@@ -317,18 +391,28 @@ class BookPartsMixin:
                 return kids[0].text
             return None
 
-        def wrap(run: etree._Element, superscript: bool) -> bool:
+        def add_run(parent, pos, text, rpr):
+            r = etree.Element(f"{W}r")
+            if rpr is not None:
+                r.append(copy.deepcopy(rpr))
+            t = etree.SubElement(r, f"{W}t")
+            t.text = text
+            t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+            parent.insert(pos, r)
+
+        def wrap(run: etree._Element, in_note: bool) -> None:
             parent = run.getparent()
             idx = list(parent).index(run)
             prev = parent[idx - 1] if idx > 0 else None
             nxt = parent[idx + 1] if idx + 1 < len(parent) else None
-            # unwrap an earlier style
-            if text_of(prev) in ("(", "[") and (text_of(nxt) or "").strip() in (")", "]"):
+            if text_of(prev) in opens:
                 parent.remove(prev)
+            if (text_of(nxt) or "").strip() in closes:
                 parent.remove(nxt)
-                idx = list(parent).index(run)
+            idx = list(parent).index(run)
             rpr = run.find(f"{W}rPr")
-            if not superscript:
+            opening, closing = styles[style][1 if in_note else 0]
+            if in_note:
                 if rpr is None:
                     rpr = etree.Element(f"{W}rPr")
                     run.insert(0, rpr)
@@ -336,46 +420,61 @@ class BookPartsMixin:
                 if va is None:
                     va = etree.SubElement(rpr, f"{W}vertAlign")
                 va.set(f"{W}val", "baseline")
-            if not opening:
-                return True
-            after = nxt_text = None
-            if not superscript:
+                if not rtl_doc:
+                    # fence the number: "context" numerals would otherwise draw
+                    # it Arabic-Indic at the start of a paragraph
+                    opening = "\u200e" + opening
                 k = list(parent).index(run)
                 nxt_run = parent[k + 1] if k + 1 < len(parent) else None
                 nxt_text = text_of(nxt_run) or ""
-                after = closing if nxt_text.startswith((" ", "\u00a0")) else closing + " "
-                if rtl_doc and nxt_run is not None and not nxt_text.strip():
-                    # a bare space between the mark and RTL text is weak; flag it
-                    # RTL or Word moves it to the far side of the number
+                if nxt_text.startswith((" ", "\u00a0")):
+                    closing = closing.rstrip()
+                if rtl_doc and nxt_run is not None and nxt_text and not nxt_text.strip():
                     nrpr = nxt_run.find(f"{W}rPr")
                     if nrpr is None:
                         nrpr = etree.Element(f"{W}rPr")
                         nxt_run.insert(0, nrpr)
                     if nrpr.find(f"{W}rtl") is None:
                         etree.SubElement(nrpr, f"{W}rtl")
-            for pos, ch in ((idx, opening), (idx + 2, after or closing)):
-                r = etree.Element(f"{W}r")
-                if rpr is not None:
-                    r.append(copy.deepcopy(rpr))
-                t = etree.SubElement(r, f"{W}t")
-                t.text = ch
-                t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
-                parent.insert(pos, r)
-            return True
+            if closing:
+                add_run(parent, idx + 1, closing, rpr)
+            if opening:
+                add_run(parent, idx, opening, rpr)
 
         doc = self._require("word/document.xml")
         for ref in list(doc.iter(tag_ref)):
             if ref.get(f"{W}customMarkFollows") in ("1", "true"):
                 continue
-            if wrap(ref.getparent(), superscript=True):
-                done += 1
+            wrap(ref.getparent(), in_note=False)
+            done += 1
         notes = self._tree(f"word/{kind}s.xml")
         if notes is not None:
             for mark in list(notes.iter(tag_mark)):
-                wrap(mark.getparent(), superscript=False)
+                wrap(mark.getparent(), in_note=True)
             self._mark(f"word/{kind}s.xml")
         self._mark("word/document.xml")
         return {"style": style, "marks": done}
+
+    def _apply_note_mark_preference(self) -> int:
+        """On save: the document's note-mark style and notes tashkil
+        preference, applied to every note (idempotent)."""
+        if "word/footnotes.xml" not in self._modified and "word/document.xml" not in self._modified:
+            return 0
+        try:
+            props = self.get_custom_properties()
+        except Exception:  # noqa: BLE001
+            return 0
+        notes_mode = props.get("docx-mcp.notes-tashkil")
+        if notes_mode in ("strip", "keep-shadda") and hasattr(self, "tashkil"):
+            self.tashkil(notes_mode, parts="notes")
+        pref = props.get("docx-mcp.note-marks")
+        if pref not in ("parentheses", "brackets", "dash"):
+            return 0
+        n = 0
+        for kind in ("footnote", "endnote"):
+            if self._tree(f"word/{kind}s.xml") is not None:
+                n += self.set_note_mark_style(pref, kind)["marks"]
+        return n
 
     # ── verse ───────────────────────────────────────────────────────────
 
@@ -387,12 +486,13 @@ class BookPartsMixin:
         numbered: bool = False,
         start_at: int = 1,
         color: str | None = None,
-        number_color: str = "520912",
+        number_color: str | None = None,
         font: str | None = None,
         size_pt: float | None = None,
         bold: bool = False,
         gap_cm: float = 1.0,
         separator: str | None = None,
+        width_pct: float = 80,
     ) -> dict:
         """Poetry (nazm): each verse's two hemistichs side by side, each
         stretched across its half (Word "distribute"), in a borderless
@@ -401,7 +501,10 @@ class BookPartsMixin:
         verses: ["صدر *** عجز", …] (split on "***", "…" or "|"), or pairs.
         numbered: verse numbers («٤٨-») before each verse, in number_color.
         separator: a small mark between the hemistichs (e.g. "❁"), else a gap.
+        width_pct: the verse block's share of the text width (centred), so
+            short hemistichs are not stretched across the whole page.
         """
+        number_color = self._c(number_color, "accent")
         import re
 
         rows = []
@@ -417,7 +520,11 @@ class BookPartsMixin:
         rtl = self._is_rtl() or any(has_rtl(a + b) for a, b in rows)
         doc = self._require("word/document.xml")
         sect = doc.find(f"{W}body/{W}sectPr")
-        width_tw = self._text_width_twips(sect) if sect is not None else 9000
+        if not 40 <= width_pct <= 100:
+            raise ValueError("width_pct must be 40–100")
+        width_tw = int(
+            (self._text_width_twips(sect) if sect is not None else 9000) * width_pct / 100
+        )
         num_tw = 700 if numbered else 0
         mid_tw = int(gap_cm * 567)
         half = (width_tw - num_tw - mid_tw) // 2
@@ -527,7 +634,7 @@ class BookPartsMixin:
         para_id: str,
         text: str,
         *,
-        color: str = "520912",
+        color: str | None = None,
         font: str | None = None,
         size_pt: float = 9,
         bold: bool = True,
@@ -537,6 +644,7 @@ class BookPartsMixin:
         """A side heading in the margin beside a paragraph (a text box
         anchored to it, so it travels with the text). side: outside (flips
         with odd/even pages), inside, left or right."""
+        color = self._c(color, "accent")
         rel = {
             "outside": "outsideMargin",
             "inside": "insideMargin",
@@ -645,7 +753,7 @@ class BookPartsMixin:
         template: str = "%1 .",
         number_format: str = "decimal",
         start_at: int = 1,
-        color: str = "520912",
+        color: str | None = None,
         bold: bool = True,
         font: str | None = None,
         size_pt: float | None = None,
@@ -660,6 +768,7 @@ class BookPartsMixin:
         "(%1)", "%1-"). number_format: decimal (shows ١٢٣ in Arabic text),
         arabic-abjad, arabic-alpha, roman. follow: space, tab or nothing.
         """
+        color = self._c(color, "accent")
         fmts = {
             "decimal": "decimal",
             "arabic-abjad": "arabicAbjad",
@@ -752,7 +861,7 @@ class BookPartsMixin:
         after_para_id: str | None = None,
         subtitle: str | None = None,
         items: list[str] | None = None,
-        color: str = "520912",
+        color: str | None = None,
         font: str | None = None,
         size_pt: float = 30,
         frame: bool = True,
@@ -762,6 +871,7 @@ class BookPartsMixin:
         section, vertically centred, with a woven frame drawn on that page
         only. items: lines listed under the title (e.g. the indexes that
         follow)."""
+        color = self._c(color, "accent")
         doc = self._require("word/document.xml")
         body = doc.find(f"{W}body")
         body_sect = body.find(f"{W}sectPr")
@@ -862,7 +972,7 @@ class BookPartsMixin:
             phh = int(pg.get(f"{W}h", "16838")) / 567.0
             m = 1.0
             frame_art = (
-                ia.frame("#" + (color_hex(color) or "520912"), aspect=(pw - 2 * m) / (phh - 2 * m)),
+                ia.frame("#" + color, aspect=(pw - 2 * m) / (phh - 2 * m)),
                 pw,
                 phh,
                 m,

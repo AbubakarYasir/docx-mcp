@@ -25,12 +25,25 @@ any Arabic text that is still missing direction markup.
 ## Designing documents
 
 - **A whole book in one call:** `apply_book_preset("tahqiq", title="…",
-  running_head="title-chapter")` sets page, fonts, a labelled style set,
-  running heads, folio, footnote design and honorifics. Then write with
+  palette="navy-gold")` sets page, fonts, a labelled style set, running heads,
+  folio, footnote design, note marks, tashkil handling and honorifics. Presets:
+  `tahqiq`, `kitab`, `urdu-nastaliq`, `english`, `bilingual`. Then write with
   styles: «باب» for chapters, «ترجمة» for sections, «رقم الحديث» for [١],
   «كلام النبي ﷺ» for the Prophet's words, `insert_separator` for ❁ ❁ ❁.
-- **Like a printed book:** `design_running_head("boxed")` (or `vignette`,
-  `cartouche`), `set_note_mark_style("parentheses")` for «(١)»,
+- **Colours per client:** `set_house_colors("green-gold")` or your own
+  `accent` / `secondary` / `ink`; every design tool follows them.
+- **Tashkil:** vocalised text gets safe line spacing; notes and book names are
+  unvocalised; `tashkil`, `tashkil_report`, `color_tashkil`.
+- **Headings:** `insert_heading("باب الطهارة", design="flanked")` (also
+  `fleuron`, `cartouche`, `bullet`).
+- **Faharis:** `build_faharis(people=[…], places=[…], sources=[…])`.
+- **English books:** `insert_hadith_entry`, `insert_bilingual_heading`,
+  `insert_glossary_entry`.
+- **PDF:** `export_pdf("book.pdf", "print")` (bleed, crop marks, trim box) or
+  `"digital"` (bookmarks, spreads, right-to-left page order);
+  `set_pdf_preferences` stores a client's wishes.
+- **Like a printed book:** `design_running_head("fleuron")` (or `rule`,
+  `boxed`, `vignette`, `cartouche`), `set_note_mark_style("parentheses")` for «(١)»,
   `insert_verses(["صدر *** عجز", …], numbered=True)` for nazm,
   `add_margin_note(para, "الخاتمة")`, `define_numbered_style("Tarjama Entry")`
   for self-numbering entries, `insert_part_title("الفهارس")`.
@@ -50,9 +63,9 @@ any Arabic text that is still missing direction markup.
 - **Book pages:** `set_book_layout(page_size="17x24", mirror_margins=True,
   rtl_binding=True)`, `design_header_footer` with `{STYLEREF:Chapter}`
   running heads and `{PAGE}`, `set_page_numbering`.
-- **Footnotes like a printed Arabic book:** `set_note_continuation(color=
-  "520912")` puts "=" at the foot of a page where a note carries over,
-  `set_note_separator("full", color="520912")`, `set_note_numbering(
+- **Footnotes like a printed Arabic book:** `set_note_continuation()` puts
+  "=" at the foot of a page where a note carries over,
+  `set_note_separator("tapered", width_pct=65)`, `set_note_numbering(
   restart="page")`, and `add_custom_mark_note(..., mark="[١]")` for a
   narration number that carries its own takhrij note.
 - **Indexes (فهارس):** `mark_index_entries(["عمر بن الخطاب", "البخاري"],

@@ -1058,6 +1058,52 @@ def frame(
     return svg(W, H, "".join(body))
 
 
+def note_rule(
+    kind: str = "tapered", color: str = "#1A1A1A", aspect: float = 40.0, rtl: bool = True
+) -> str:
+    """Footnote separator art (a short rule, start-aligned).
+
+    tapered — a rule that thins from the text edge outward;
+    khatam  — hairline rule opening with a small eight-point star;
+    swash   — the calligraphic swash divider in miniature;
+    diamond — hairline rule with a centred diamond and end beads.
+    rtl puts the heavy end / star at the right (the start of an RTL line).
+    """
+    c = hexc(color)
+    h = 10.0
+    w = h * aspect
+    y = h / 2
+    shapes = []
+    if kind == "tapered":
+        pts_t, pts_b = [], []
+        for i in range(41):
+            f = i / 40
+            th = 0.85 * (1 - f) ** 1.3 + 0.12
+            x = f * w
+            pts_t.append((x, y - th))
+            pts_b.append((x, y + th))
+        shapes.append(Polygon(pts_t + pts_b[::-1]))
+    elif kind == "khatam":
+        k = khatam(4.2, 5.0, y)
+        shapes.append(k.difference(k.buffer(-0.9, join_style="mitre")))
+        shapes.append(circle(1.0, 5.0, y, 12))
+        shapes.append(box(10.5, y - 0.3, w - 2.5, y + 0.3))
+        shapes.append(regular(4, 1.4, w - 1.5, y))
+    elif kind == "diamond":
+        shapes.append(box(2.5, y - 0.28, w - 2.5, y + 0.28))
+        shapes.append(regular(4, 2.6, w / 2, y))
+        shapes.append(circle(1.0, 1.2, y, 12))
+        shapes.append(circle(1.0, w - 1.2, y, 12))
+    elif kind == "swash":
+        return swash_divider(c, aspect=aspect / 2.6, weight=0.7)
+    else:
+        raise ValueError("note rule kind must be tapered, khatam, swash or diamond")
+    g = unary_union(shapes)
+    if rtl:
+        g = mirror_x(g, w / 2)
+    return svg(w, h, fill(g, c))
+
+
 def dots_divider(color: str = "#520912", aspect: float = 10.0) -> str:
     """Light divider: hairline rules, a small khatam, diamonds and beads."""
     c = hexc(color)

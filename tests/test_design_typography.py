@@ -159,7 +159,7 @@ class TestStyles:
         assert not b["created"] and b["style_id"] == "Matn"
         st = _style(doc, "Matn")
         assert st.find(f"{W}aliases").get(f"{W}val") == "متن"
-        assert st.find(f"{W}pPr/{W}jc").get(f"{W}val") == "mediumKashida"
+        assert st.find(f"{W}pPr/{W}jc").get(f"{W}val") == "lowKashida"
         assert st.find(f"{W}pPr/{W}bidi") is not None
         rpr = st.find(f"{W}rPr")
         assert rpr.find(f"{W}rFonts").get(f"{W}cs") == "Amiri"

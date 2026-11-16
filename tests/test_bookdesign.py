@@ -46,21 +46,27 @@ def test_style_names_and_labels_resolve_to_ids(doc):
 
 
 def test_tahqiq_preset(doc):
-    r = doc.apply_book_preset(
-        "tahqiq", title="رسالة", author="المؤلف", running_head="title-chapter"
-    )
+    r = doc.apply_book_preset("tahqiq", title="رسالة", author="المؤلف", running_head="fleuron")
     assert r["applied"][-1] == "settings"
     normal = _style(doc, "Normal")
     assert normal.find(f"{W}rPr/{W}rFonts").get(f"{W}cs") == "Amiri"
     assert normal.find(f"{W}rPr/{W}szCs").get(f"{W}val") == "26"
     h1 = _style(doc, "Heading1")
-    assert h1.find(f"{W}pPr/{W}pBdr/{W}top").get(f"{W}val") == "double"
+    # headings are typographic (no ruled boxes); the design sits in the art
+    assert h1.find(f"{W}pPr/{W}pBdr") is None
+    assert h1.find(f"{W}pPr/{W}jc").get(f"{W}val") == "center"
+    assert h1.find(f"{W}rPr/{W}color").get(f"{W}val") == "520912"
     assert h1.find(f"{W}pPr/{W}pageBreakBefore") is None or h1.find(
         f"{W}pPr/{W}pageBreakBefore"
     ).get(f"{W}val") in ("0", "false")
     fn = _style(doc, "FootnoteText")
     sp = fn.find(f"{W}pPr/{W}spacing")
-    assert sp.get(f"{W}lineRule") == "exact" and sp.get(f"{W}line") == "300"
+    # vocalised text: "at least" spacing so harakat are never clipped
+    assert sp.get(f"{W}lineRule") == "atLeast" and sp.get(f"{W}line") == "300"
+    props = doc.get_custom_properties()
+    assert props["docx-mcp.note-marks"] == "parentheses"
+    assert props["docx-mcp.notes-tashkil"] == "strip"
+    assert props["docx-mcp.numerals"] == "hindi"
     settings = doc._trees["word/settings.xml"]
     for flag in (
         "evenAndOddHeaders",
@@ -80,7 +86,8 @@ def test_kitab_preset_new_pages_and_kashida(doc):
     doc.apply_book_preset("kitab", justify="kashida", honorifics=False, overrides={"body_pt": 15})
     h1 = _style(doc, "Heading1")
     assert h1.find(f"{W}pPr/{W}pageBreakBefore") is not None
-    assert _style(doc, "Normal").find(f"{W}pPr/{W}jc").get(f"{W}val") == "mediumKashida"
+    # medium/high kashida drop vocalised lines in Word: low kashida only
+    assert _style(doc, "Normal").find(f"{W}pPr/{W}jc").get(f"{W}val") == "lowKashida"
     assert _style(doc, "Normal").find(f"{W}rPr/{W}sz").get(f"{W}val") == "30"
 
 
