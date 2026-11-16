@@ -5,19 +5,26 @@ build-backend = "hatchling.build"
 [project]
 name = "docx-mcp-server"
 version = "0.7.4"
-description = "MCP server for creating, reading, and editing Word (.docx) documents with markdown conversion, track changes, comments, footnotes, tables, images, sections, and structural validation"
+description = "MCP server that typesets books in Microsoft Word — Arabic, Urdu, English and bilingual: RTL, tashkil, footnotes, faharis, Islamic ornament, print-ready and digital PDF — plus track changes, comments and structural validation for any .docx"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-authors = [{ name = "SecurityRonin" }]
-keywords = ["mcp", "docx", "word", "track-changes", "comments", "footnotes", "ooxml"]
+authors = [{ name = "SecurityRonin" }, { name = "Abu Bakar Gondal" }]
+keywords = ["mcp", "model-context-protocol", "docx", "word", "arabic", "urdu", "rtl", "typesetting", "book-design", "tashkil", "hadith", "tahqiq", "islamic-art", "pdf", "print-ready", "track-changes", "comments", "footnotes", "ooxml", "claude"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Topic :: Text Processing :: Markup :: XML",
+    "Topic :: Text Processing :: Fonts",
+    "Topic :: Office/Business :: Office Suites",
+    "Natural Language :: Arabic",
+    "Natural Language :: Urdu",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
 ]
+
 dependencies = [
     "mcp>=1.0.0",
     "lxml>=4.9.0",
@@ -43,14 +50,17 @@ dev = [
     "hypothesis>=6.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/AbubakarYasir/docx-mcp"
+Repository = "https://github.com/AbubakarYasir/docx-mcp"
+Documentation = "https://github.com/AbubakarYasir/docx-mcp/blob/main/docs/BOOKS.md"
+Changelog = "https://github.com/AbubakarYasir/docx-mcp/blob/main/CHANGELOG.md"
+Issues = "https://github.com/AbubakarYasir/docx-mcp/issues"
+Upstream = "https://github.com/SecurityRonin/docx-mcp"
+
 [project.scripts]
 docx-mcp = "docx_mcp.cli:main"
 docx-mcp-server = "docx_mcp.cli:main"
-
-[project.urls]
-Homepage = "https://github.com/SecurityRonin/docx-mcp"
-Repository = "https://github.com/SecurityRonin/docx-mcp"
-Issues = "https://github.com/SecurityRonin/docx-mcp/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["docx_mcp"]

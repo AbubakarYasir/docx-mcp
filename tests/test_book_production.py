@@ -122,6 +122,7 @@ def test_heading_designs(doc, design):
     r = doc.insert_heading("باب الطهارة", level=level, after_para_id=doc._first, design=design)
     p = _para(doc, r["para_id"])
     assert p.find(f"{W}pPr/{W}pStyle").get(f"{W}val") == f"Heading{level}"
+    assert _para(doc, r["after_para_id"]) is not None  # every design says where to continue
     # no inline picture in the heading itself (it would be copied into the TOC)
     assert not list(
         p.iter("{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline")

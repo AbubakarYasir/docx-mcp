@@ -319,6 +319,24 @@ class BookDesignMixin:
                 "line_spacing": 1.0,
             },
         )
+        # title page lines under the title (author, editor, publisher)
+        self.define_style(
+            "Subtitle",
+            based_on="Normal",
+            next_style="Normal",
+            aliases=["عنوان فرعي"] if rtl else None,
+            gallery=True,
+            ui_priority=2,
+            run={**hrun, "bold": False, "size_pt": cfg["section_pt"], "color": ink},
+            paragraph={
+                "alignment": "center",
+                "space_before_pt": 0,
+                "space_after_pt": 8,
+                "keep_with_next": True,
+                "first_line_cm": 0,
+                "line_spacing": 1.0,
+            },
+        )
         h1_run = {**hrun, "size_pt": cfg["chapter_pt"]}
         if rtl:
             h1_run["color"] = accent
@@ -590,12 +608,11 @@ class BookDesignMixin:
         style = f"Heading {level}"
         if design == "cartouche":
             sid = self._style_id_for(style, "paragraph")
-            return {
-                "design": design,
-                **self.insert_cartouche_title(
-                    text, after_para_id=after_para_id, kind="lobed", style=sid, size_pt=16
-                ),
-            }
+            res = self.insert_cartouche_title(
+                text, after_para_id=after_para_id, kind="lobed", style=sid, size_pt=16
+            )
+            # same shape as the other designs: continue writing after the heading
+            return {"design": design, **res, "after_para_id": res["para_id"]}
         res = self.insert_paragraph(after_para_id, text, style=style) if after_para_id else None
         if res is None:
             doc = self._require("word/document.xml")

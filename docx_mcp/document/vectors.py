@@ -555,12 +555,21 @@ class VectorArtMixin:
         draw_w, draw_h = w_cm, w_cm * vh / vw
         doc = self._require("word/document.xml")
         rtl = has_rtl(text)
-        line_pt = size_pt * 1.25
-        pad_pt = max(0.0, draw_h / 2.54 * 72 - line_pt) / 2 + 4
+        # the line itself is as tall as the cartouche: Word drops the space
+        # before a paragraph at the top of a page, so padding there would let
+        # the art ride up into the running head
+        # Word sets the text near the foot of an exact line: its centre is
+        # ~0.62 × size above the line's bottom (measured in Word 365)
+        h_pt = draw_h / 2.54 * 72
+        text_mid = 0.62 * size_pt
+        line_pt = max(size_pt * 1.25, h_pt / 2 + text_mid + 3)
+        centre_pt = line_pt - text_mid  # from the top of the line
+        pad_pt = 4.0
+        after_pt = max(pad_pt, centre_pt + h_pt / 2 - line_pt + pad_pt)
         props = {
             "alignment": "center",
             "space_before_pt": round(pad_pt, 1),
-            "space_after_pt": round(pad_pt, 1),
+            "space_after_pt": round(after_pt, 1),
             "keep_with_next": True,
             "line_exact_pt": round(line_pt, 1),
         }
@@ -588,9 +597,11 @@ class VectorArtMixin:
             ph.remove(c)
         etree.SubElement(ph, f"{WP}align").text = "center"
         pv = an.find(f"{WP}positionV")
-        pv.set("relativeFrom", "paragraph")
+        # from the text line (see _anchor_behind): stays on the title even
+        # at the top of a page, where Word drops the space before
+        pv.set("relativeFrom", "line")
         pv.find(f"{WP}posOffset").text = str(
-            int((pad_pt + line_pt / 2) / 72 * 2.54 * EMU_PER_CM - draw_h * EMU_PER_CM / 2)
+            int(centre_pt / 72 * 2.54 * EMU_PER_CM - draw_h * EMU_PER_CM / 2)
         )
         an.set("locked", "0")
         run.append(drawing)

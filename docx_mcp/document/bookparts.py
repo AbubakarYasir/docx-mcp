@@ -94,9 +94,12 @@ class BookPartsMixin:
             ph.remove(c)
         etree.SubElement(ph, f"{WP}align").text = "center"
         pv = an.find(f"{WP}positionV")
-        pv.set("relativeFrom", "paragraph")
+        # measured from the text line, not the paragraph top: Word drops the
+        # space before a paragraph at the top of a page, and art measured
+        # from the paragraph would then sit below its text
+        pv.set("relativeFrom", "line")
         pv.find(f"{WP}posOffset").text = str(
-            int((pad_pt + line_pt / 2) / 72 * 2.54 * EMU_PER_CM - h_cm * EMU_PER_CM / 2)
+            int((line_pt / 2) / 72 * 2.54 * EMU_PER_CM - h_cm * EMU_PER_CM / 2)
         )
         an.set("locked", "0")
         run.append(drawing)
@@ -682,7 +685,7 @@ class BookPartsMixin:
         etree.SubElement(an, f"{WP}simplePos", x="0", y="0")
         ph = etree.SubElement(an, f"{WP}positionH", relativeFrom=rel)
         etree.SubElement(ph, f"{WP}align").text = "center"
-        pv = etree.SubElement(an, f"{WP}positionV", relativeFrom="paragraph")
+        pv = etree.SubElement(an, f"{WP}positionV", relativeFrom="line")
         etree.SubElement(pv, f"{WP}posOffset").text = "0"
         etree.SubElement(an, f"{WP}extent", cx=str(cx), cy=str(cy))
         etree.SubElement(an, f"{WP}effectExtent", l="0", t="0", r="0", b="0")
