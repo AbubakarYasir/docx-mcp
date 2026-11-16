@@ -4,6 +4,30 @@ Changes in this fork on top of upstream `SecurityRonin/docx-mcp` v0.7.4.
 
 ## Unreleased
 
+### Docs: the Book Edition README, book guide and skill
+
+- New README: what the fork makes, shown with pages rendered by Microsoft
+  Word; prompts, features, install from this fork, the Word behaviours it
+  handles. Images in `docs/images/` (also used as the social preview).
+- `docs/BOOKS.md`: the book workflow, design rules, palettes, recipes and a
+  reference for every book tool, generated from the tool definitions.
+- The companion skill (installed by the server) now teaches the book
+  workflow, the design rules and the tahqiq house style; the server's
+  instructions point agents to it.
+- Package metadata: description, keywords, classifiers and project links.
+
+### Fixed (found while making the showcase)
+
+- Heading art (flanked brackets, bullets, cartouches) is anchored to its text
+  line: at the top of a page Word drops the space before a paragraph, and art
+  measured from the paragraph top slid below its title.
+- Cartouche titles hold their full height in the line, so at the top of a
+  page they no longer ride into the running head; the title is centred on
+  the art.
+- `insert_heading(design="cartouche")` returns `after_para_id` like the
+  other designs.
+- Presets define a centred **Subtitle** style for title-page lines.
+
 ### Added: house colours, tashkil, faharis, English books and PDF export
 
 Reworked after review of the first book designs against the printed references

@@ -1,108 +1,230 @@
-# docx-mcp
+<p align="center">
+  <img src="docs/images/hero.png" alt="docx-mcp Book Edition — typeset real Arabic, Urdu and English books in Microsoft Word with your AI agent" width="100%">
+</p>
 
-> **Fork:** maintained fork with fixes for Word compatibility and Arabic / right-to-left support. See [FORK.md](FORK.md) and [CHANGELOG.md](CHANGELOG.md).
+<h1 align="center">docx-mcp · Book Edition</h1>
 
-[![PyPI](https://img.shields.io/pypi/v/docx-mcp-server?color=blue)](https://pypi.org/project/docx-mcp-server/)
-[![Python](https://img.shields.io/pypi/pyversions/docx-mcp-server)](https://pypi.org/project/docx-mcp-server/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/SecurityRonin/docx-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/SecurityRonin/docx-mcp/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/SecurityRonin/docx-mcp)
-[![Sponsor](https://img.shields.io/github/sponsors/h4x0r?logo=githubsponsors&label=Sponsor&color=%23ea4aaa)](https://github.com/sponsors/h4x0r)
-[![SafeSkill 91/100](https://img.shields.io/badge/SafeSkill-91%2F100_Verified%20Safe-brightgreen)](https://safeskill.dev/scan/securityronin-docx-mcp)
+<p align="center">
+  <b>The MCP server that typesets real books in Microsoft Word.</b><br>
+  Arabic tahqiq editions, Urdu Nastaliq, English and bilingual hadith books —<br>
+  with tashkil, footnotes, faharis, Islamic ornament and print-ready PDFs.
+</p>
 
-<a href="https://glama.ai/mcp/servers/SecurityRonin/docx-mcp">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/SecurityRonin/docx-mcp/badges/card.svg" alt="docx-mcp MCP server" />
-</a>
+<p align="center" dir="rtl">
+  صفُّ الكتب العلمية في «وورد» بالذكاء الاصطناعي: تحقيق وتخريج، تشكيل، حواشٍ، فهارس، زخارف إسلامية، وملفات PDF جاهزة للطباعة.
+</p>
 
-Give your AI coding agent the ability to create, read, and edit Word documents. Edits appear as tracked changes in Microsoft Word — red strikethrough for deletions, green underline for insertions — and after any revision session your agent can produce an email-ready change log listing every insertion, deletion, and replacement. Or compare two separate files to get the same output automatically.
+<p align="center">
+  <a href="#install"><img alt="Install" src="https://img.shields.io/badge/install-uvx-520912?style=flat-square"></a>
+  <img alt="MCP tools" src="https://img.shields.io/badge/MCP%20tools-286-A8874E?style=flat-square">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-1382%20passing-2F6E54?style=flat-square">
+  <img alt="Checked in Microsoft Word" src="https://img.shields.io/badge/checked%20in-Microsoft%20Word-1F2E4A?style=flat-square">
+  <img alt="Right-to-left" src="https://img.shields.io/badge/RTL-Arabic%20%C2%B7%20Urdu-0F4C5C?style=flat-square">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-1A1A1A?style=flat-square">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-6B6B6B?style=flat-square"></a>
+</p>
 
-## Who This Is For
+<p align="center">
+  <a href="#what-it-makes">Gallery</a> ·
+  <a href="#ask-your-agent">Prompts</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#install">Install</a> ·
+  <a href="docs/BOOKS.md">Book guide</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
-**Professionals who produce Word deliverables and want their AI agent to handle the document work directly:**
+---
 
-- **Legal** — contract review with tracked redlines, batch clause replacement across templates, comment annotations explaining each change, footnote management
-- **Security & Penetration Testing** — generate pentest reports from markdown findings, merge appendices from multiple engagements, add executive-summary comments, remove DRAFT watermarks before delivery
-- **Consulting** — build proposals and SOWs from templates, convert meeting notes to formatted deliverables, bulk-update payment terms across document sets
-- **Compliance & Audit** — structural validation of document integrity, cross-reference checking, heading-level audits, protection enforcement
+Scholarly books are hard to typeset. Arabic needs right-to-left layout that
+holds when Latin words appear. Vocalised text needs room for its harakat.
+Footnotes need «(١)» marks, a designed rule and «=» where a note runs on.
+Hadith need musnad numbers that carry their takhrij. A book needs running
+heads, faharis with live page numbers and art a printer can use. Word can do
+all of it, but nobody has time to click it together for every client.
 
-## What You Can Ask Your Agent To Do
+**docx-mcp Book Edition hands that work to your AI agent.** Ask Claude (or any
+MCP client) for a book and it builds it as a real Word file: proper styles,
+live footnotes, live indexes, vector ornament. You can still open it and edit
+it like any document. Then it exports the PDF your printer or your readers
+need.
 
-**Review a contract:**
-> "Open contract.docx, find every instance of 'Net 30', change it to 'Net 60', and add a comment on each explaining it was updated per Amendment 3. Save as contract_revised.docx."
+It is a fork of [SecurityRonin/docx-mcp](https://github.com/SecurityRonin/docx-mcp).
+Everything the original does (tracked changes, comments, contract review)
+still works, and Word-compatibility fixes are made here as well.
 
-**Generate a report from markdown:**
-> "Convert my pentest-findings.md to a Word document using the client's report template. Add footnotes for each CVE reference."
+## What it makes
 
-**Batch-edit a template library:**
-> "Open the MSA template, replace 'ACME Corp' with 'GlobalTech Inc' everywhere, update the effective date in the header, and set document protection to track-changes-only."
+Every image below is a page **rendered by Microsoft Word** from a file this
+server wrote. Nothing is mocked up.
 
-**Audit a document before sending:**
-> "Open the final deliverable, run a structural audit, check for any DRAFT or TODO markers, validate all footnote cross-references, and remove any watermarks."
+<p align="center">
+  <img src="docs/images/arabic-spread.png" alt="An Arabic tahqiq book typeset by docx-mcp: shamsa title page and a chapter with musnad-numbered hadith, footnotes and running head" width="100%">
+</p>
 
-Your agent handles the entire workflow — opening the file, navigating the structure, making precise edits with full revision history, validating integrity, and saving — while you focus on the substance.
+**One book, any house.** Colours, running heads, note rules and heading
+designs are switchable per client. The text never changes:
 
-## Installation
+<p align="center">
+  <img src="docs/images/palettes.png" alt="The same chapter in maroon, navy-gold and green-gold house palettes with different heading, running-head and note-rule designs" width="100%">
+</p>
 
-**Claude Code** (recommended):
+**The details printers look for:** running heads with the chapter on odd pages
+and the title on even ones, «[١]» narration numbers that open their own
+footnote, the Prophet's words ﷺ in the accent colour, a 65% note rule,
+unvocalised references and coloured harakat:
+
+<p align="center">
+  <img src="docs/images/details.png" alt="Close-ups: running head, flanked chapter title, narration numbers carrying notes, tapered footnote rule, coloured harakat" width="88%">
+</p>
+
+**English and bilingual books,** set like the English *Bulugh al-Maram*: the Arabic
+text, then «1. Narrated …» with the Prophet's words in bold, the source line,
+and a glossary.
+
+<p align="center">
+  <img src="docs/images/english-spread.png" alt="An English hadith book page with Arabic text, numbered translation, bold prophetic speech, footnotes and glossary" width="100%">
+</p>
+
+**Faharis, built for you:** verses, hadith openings (atraf), people, places,
+sources and topics. Each is a live Word index with page numbers, behind a framed
+part-title page.
+
+<p align="center">
+  <img src="docs/images/faharis.png" alt="Framed part-title page for the faharis and an automatic table of contents with page numbers" width="100%">
+</p>
+
+**Ornament drawn with real constructions** (Hankin girih, woven strapwork,
+Bézier fleurons) and inserted as native Word vectors:
+
+<p align="center">
+  <img src="docs/images/ornaments.png" alt="Shamsa, woven rosette, star medallion, girih ring, calligraphic divider, guilloche band, cartouches and footnote rules" width="100%">
+</p>
+
+**Print and screen from one file.** The print PDF has a trim box, 3 mm bleed
+and crop marks. The digital PDF has bookmarks, book spreads and right-to-left
+page order:
+
+<p align="center">
+  <img src="docs/images/print-digital.png" alt="Print PDF with crop marks beside a digital two-page spread" width="100%">
+</p>
+
+## Ask your agent
+
+> *"Typeset this risalah as a tahqiq book: 17×24, maroon. Number the narrations
+> [١], [٢]… and move each takhrij into its number's footnote. Colour only the
+> Prophet's words, end each section with ❁ ❁ ❁, and add the faharis."*
+
+> *"Same book for a different client: navy and gold, vignette page numbers,
+> cartouche chapter titles. Then give me a print PDF with 5 mm bleed."*
+
+> *"Make an English edition of Bulugh al-Maram's chapter on water: Arabic,
+> then the translation with the Prophet's words in bold, a source line and a
+> glossary."*
+
+> *"Check the manuscript's tashkil, strip the harakat from the references in the
+> footnotes, and colour the vowels gold in the PDF."*
+
+> *"Set this Urdu book in Jameel Noori Nastaleeq with chapters on new pages
+> and honorifics as real glyphs."*
+
+## Features
+
+| | |
+|---|---|
+| **Whole book in one call** | `apply_book_preset("tahqiq" \| "kitab" \| "urdu-nastaliq" \| "english" \| "bilingual")` sets page size, fonts, a labelled style set, running heads, folio, footnote design, note marks, tashkil handling, honorifics and colours |
+| **House colours** | `set_house_colors`: maroon, brick, navy-gold, green-gold, teal, burgundy-silk, ink, or the client's own. Every design tool follows them, and colour marks structure, never reading text |
+| **Headings** | `insert_heading` designs: plain, fleuron, flanked (calligraphic brackets measured to the title), cartouche, bullet. The art never leaks into the table of contents |
+| **Tashkil** | Safe line spacing for vocalised text. Notes, references and book names stay unvocalised. `tashkil_report`, `tashkil` (normalize, strip, keep-shadda, light), `color_tashkil`. Searches ignore harakat |
+| **Footnotes** | «(١)» or «57-» marks, a rule over 65% of the line (plain, tapered, khatam, diamond, swash), «=» continuation, musnad numbers that carry their own note |
+| **Running heads** | Chapter on odd pages, title on even, folio on the outer side: fleuron, rule, boxed, vignette or cartouche |
+| **Faharis** | `build_faharis`: Qur'an, atraf, people, places, sources and topics, all live Word indexes |
+| **Hadith & poetry** | Musnad numbering, `insert_verses` for couplets, `define_numbered_style` for self-numbering tarajim, margin side-heads |
+| **English books** | `insert_hadith_entry`, `insert_bilingual_heading`, `insert_glossary_entry` |
+| **Honorifics** | ﷺ ﵁ ﵂ ﵃ … as real glyphs (Scheherazade New or Jameel Noori artwork), coloured |
+| **Ornament** | Shamsa, rosettes, star medallions, girih rings, dividers, bands, cartouches, woven page frames, or your own SVG |
+| **Right-to-left done right** | Arabic and Urdu are detected and marked RTL on save, mixed lines included. Kashida justification uses the setting Word can draw |
+| **PDF** | `export_pdf("print" \| "digital")` through Microsoft Word (or LibreOffice), with bleed, crop marks, trim box, bookmarks, spreads and PDF/A. A client's wishes are saved with `set_pdf_preferences` |
+| **Word-safe output** | Every file is validated against the ECMA-376 schemas and checked in Microsoft Word |
+
+The [book guide](docs/BOOKS.md) covers every tool and option.
+
+## Install
+
+**Claude Code**
 
 ```bash
-claude mcp add docx-mcp -- uvx docx-mcp-server
+claude mcp add docx-mcp -- uvx --from "docx-mcp-server @ git+https://github.com/AbubakarYasir/docx-mcp@main" docx-mcp-server
 ```
 
-That's it. A companion [skill](docx_mcp/skill/SKILL.md) auto-installs the first time the server starts, teaching Claude the document editing workflow, OOXML pitfalls, and audit checklist. It auto-updates on every upgrade.
-
-<details>
-<summary>Other platforms and installation methods</summary>
-
-**Claude Desktop:**
-
-Add to your MCP settings:
+**Claude Desktop, Cursor, Windsurf, VS Code**: add to the MCP settings:
 
 ```json
 {
   "mcpServers": {
     "docx-mcp": {
       "command": "uvx",
-      "args": ["docx-mcp-server"]
+      "args": ["--from", "docx-mcp-server @ git+https://github.com/AbubakarYasir/docx-mcp@main", "docx-mcp-server"]
     }
   }
 }
 ```
 
-**Cursor / Windsurf / VS Code:**
+The server installs its companion skill on first start
+(`~/.claude/skills/docx-mcp/SKILL.md`). The skill teaches the agent the book
+workflow, the design rules and the OOXML pitfalls.
 
-Add to your MCP configuration file:
+**For the best results**
 
-```json
-{
-  "mcpServers": {
-    "docx-mcp": {
-      "command": "uvx",
-      "args": ["docx-mcp-server"]
-    }
-  }
-}
+- **Microsoft Word on Windows** for PDF export. Fields, indexes and contents
+  are refreshed and laid out by Word itself. LibreOffice is used elsewhere.
+- **Fonts:** Amiri, Sakkal Majalla (ships with Windows), Scheherazade New for
+  honorifics, and Jameel Noori Nastaleeq for Urdu.
+- Python 3.10+ on Windows, macOS or Linux.
+
+## Quick start
+
+```text
+create_document("risalah.docx")
+apply_book_preset("tahqiq", title="بلوغ المرام", author="ابن حجر", palette="maroon")
+insert_heading("كِتَابُ الطَّهَارَةِ", level=1, design="flanked")
+insert_paragraph(after, "عَنْ أَبِي هُرَيْرَةَ … «هُوَ الطَّهُورُ مَاؤُهُ، الحِلُّ مَيْتَتُهُ».")
+add_custom_mark_note(para, "أخرجه أبو داود والترمذي …", mark="[١]", where="start")
+format_matches("«[^»]+»", regex=True, char_style="Prophetic Speech")
+insert_separator(after)
+apply_honorifics()
+build_faharis(people=["أبو هريرة"], sources=["سنن أبي داود"])
+save_document()
+export_pdf("risalah-print.pdf", "print")
+export_pdf("risalah.pdf", "digital")
 ```
 
-**OpenClaw:**
+## Tested in Word, not just in theory
 
-```yaml
-mcpServers:
-  docx-mcp:
-    command: uvx
-    args:
-      - docx-mcp-server
-```
+Every feature was rendered in Microsoft Word 365 and looked at page by page.
+That found Word behaviours you won't find in the documentation, and the
+server now handles them:
 
-**With pip:**
+- Medium and high **kashida** make Word drop whole lines of vocalised Arabic.
+  "Kashida" here means low kashida, which is safe.
+- Word draws automatic numbers (note marks, page numbers) with the
+  **computer's** numeral setting. The export sets ١٢٣ for Arabic books and 123
+  for English ones, then restores the user's choice.
+- Word colours **diacritics** with one colour for the whole document, not
+  run by run. `color_tashkil` stores the colour and the export applies it.
+- Word drops the space above a paragraph at the **top of a page**. Heading
+  art is anchored to the text line, so it never drifts off its title.
+- A run holding only harakat must stay right-to-left, or Word breaks the word
+  into separate letters.
 
-```bash
-pip install docx-mcp-server
-```
+1,382 automated tests run on every change, and a guard test makes sure every
+design method is a server tool with the same defaults.
 
-</details>
+## Also in the box: the document engine
 
-## Capabilities
+Everything from upstream docx-mcp: tracked changes, comments, contract review,
+change logs, markdown to Word, tables, PII scrubbing and more.
+
+### What the engine does
 
 | Capability | What your agent can do |
 |---|---|
@@ -124,7 +246,8 @@ pip install docx-mcp-server
 | **Watermark removal** | Detect and strip DRAFT watermarks from headers |
 | **PII scrubbing** *(experimental)* | Detect names, emails, phone numbers, SSNs, and more using Presidio + spaCy NER. Produces true XML redaction — original text permanently deleted, replaced with a solid black rectangle. **Not for production use** — see [limitations](#pii-scrubbing-experimental). |
 
-## Example: Contract Review with Redlines
+
+### Example: Contract Review with Redlines
 
 ```
 1. open_document("services-agreement.docx")
@@ -139,7 +262,7 @@ pip install docx-mcp-server
 
 Open the output in Word and you see exactly what a human reviewer would produce — revision marks, comments in the margin, clean document structure.
 
-## Example: Change Log After a Revision Session
+### Example: Change Log After a Revision Session
 
 ```
 1. open_document("contract.docx")
@@ -159,7 +282,7 @@ The `.txt` output reads like:
 
 Paste it into an email, a PR description, or a handover note.
 
-## Example: Compare Two Separate Document Versions
+### Example: Compare Two Separate Document Versions
 
 No editing session required — point it at any two files:
 
@@ -171,7 +294,7 @@ Returns two files:
 - `proposal_v1_diff.docx` — open in Word to see tracked changes inline
 - `proposal_v1_diff.txt` — plain-text summary, ready to paste anywhere
 
-## Example: Pentest Report from Markdown
+### Example: Pentest Report from Markdown
 
 ```
 1. create_from_markdown("pentest-report.docx",
@@ -183,7 +306,7 @@ Returns two files:
 
 Your markdown findings — headings, tables of affected hosts, code blocks with proof-of-concept output, severity ratings — become a formatted Word document matching the client's template. Smart typography is applied automatically (curly quotes, em dashes, proper ellipses).
 
-## PII Scrubbing (Experimental)
+### PII Scrubbing (Experimental)
 
 > **This feature is experimental and NOT suitable for production use or as the sole control for privileged, regulated, or legally sensitive documents.**
 
@@ -212,7 +335,7 @@ Your markdown findings — headings, tables of affected hosts, code blocks with 
 
 Always treat the output as a first pass requiring human review, not a finished redaction.
 
-## How It Works
+### How It Works
 
 A `.docx` file is a ZIP archive of XML files. This server unpacks the archive, edits the XML directly, and repacks it. This is what gives it the ability to produce real tracked changes, comments, and footnotes — things that higher-level document libraries can't do.
 
@@ -341,13 +464,21 @@ Every edit is validated against the OOXML specification before saving, catching 
 
 </details>
 
-## Requirements
 
-- Python 3.10+
-- Works on macOS, Linux, and Windows
+## Documentation
 
----
+- **[Book guide](docs/BOOKS.md)**: every book tool, with options and recipes
+- **[Companion skill](docx_mcp/skill/SKILL.md)**: what the agent learns
+- **[FORK.md](FORK.md)**: what this fork changes and how it is checked
+- **[CHANGELOG.md](CHANGELOG.md)**: every change, with the reason for it
 
-[Privacy Policy](https://securityronin.github.io/docx-mcp/privacy/) · [Terms of Service](https://securityronin.github.io/docx-mcp/terms/) · © 2026 Security Ronin Ltd
+## Credits
 
-<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=95beebbb-0f2e-46cc-9a68-a8e66f613180" />
+Built on [docx-mcp](https://github.com/SecurityRonin/docx-mcp) by Security
+Ronin (MIT). The Book Edition is maintained by
+[Abu Bakar Gondal](https://github.com/AbubakarYasir). The design rules were
+studied from printed tahqiq editions and English hadith collections. Fonts
+belong to their authors: Amiri and Scheherazade New are under the SIL Open
+Font License.
+
+Released under the [MIT License](LICENSE).

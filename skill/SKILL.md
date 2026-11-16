@@ -1,28 +1,176 @@
 ---
 name: docx-mcp
-description: "Use when editing existing Word (.docx) documents with track changes, comments, footnotes, or structural validation. Triggers: reviewing contracts, marking up reports, adding revision comments, validating document structure, removing watermarks, auditing OOXML integrity, bulk text replacement with revisions, footnote management, paragraph-level edits. Requires the docx-mcp MCP server to be running."
+description: "Use when creating or editing Word (.docx) documents — from scratch, from markdown, or from templates — and when typesetting books: Arabic/Urdu tahqiq editions, English or bilingual hadith books, print-ready and digital PDFs. Triggers: typesetting a book or risalah, Arabic/RTL documents, tashkil, footnotes and faharis, ornaments and page frames, house colours, exporting PDF for print, creating documents, creating documents, converting markdown to docx, reviewing contracts, marking up reports, adding revision comments, validating document structure, removing watermarks, auditing OOXML integrity, bulk text replacement with revisions, footnote management, paragraph-level edits. Requires the docx-mcp MCP server to be running."
 ---
 
-# Editing Word Documents with docx-mcp
+# Creating and Editing Word Documents with docx-mcp
 
 ## Overview
 
-The `docx-mcp` MCP server provides tools for reading and editing .docx files with proper OOXML markup. Edits appear as real revisions in Microsoft Word — red strikethrough for deletions, green underline for insertions, comments in the sidebar.
+The `docx-mcp` MCP server provides tools for creating, reading, and editing .docx files with proper OOXML markup. Create documents from scratch or from markdown. Edits appear as real revisions in Microsoft Word — red strikethrough for deletions, green underline for insertions, comments in the sidebar.
 
 A .docx file is a ZIP archive of XML files. This server unpacks the archive, parses all XML parts with lxml, edits the cached DOM trees directly, and repacks modified XML back into a valid .docx archive. This gives full control over OOXML markup — essential for track changes, comments, and structural validation that higher-level libraries don't expose.
 
 ## When to Use
 
+- Creating new .docx documents from scratch or from templates
+- Converting markdown to .docx with full formatting (headings, tables, lists, images, footnotes, code blocks)
 - Editing existing .docx files with tracked changes
 - Adding comments or footnotes to documents
 - Reviewing/auditing document structure
 - Removing watermarks
 - Bulk find-and-replace with revision marks
 - Any task where changes must be visible as Word revisions
+- Typesetting books — Arabic, Urdu, English, bilingual — and exporting print / digital PDFs (see **Books** below)
 
-**Do NOT use for:** Creating new .docx from scratch (use docx-js instead), PDFs, spreadsheets, or `.doc` (legacy binary format — convert to .docx first).
+**Do NOT use for:** editing existing PDFs, spreadsheets, or `.doc` (legacy binary format — convert to .docx first).
 
-## Workflow
+## Books: Arabic, Urdu and English (this fork)
+
+This server typesets whole books, not just documents: scholarly Arabic editions
+(tahqiq, takhrij), Urdu books, English translations of hadith collections, and
+bilingual works, then exports print-ready and digital PDFs. Everything stays a
+normal, editable Word file: real styles, live footnotes, live indexes.
+
+### The book workflow
+
+```
+1. create_document("book.docx")
+2. apply_book_preset("tahqiq", title="…", author="…", palette="maroon")
+      presets: tahqiq | kitab | urdu-nastaliq | english | bilingual
+3. set_house_colors(...)                      → only if the client has their own colours
+4. write with styles, never hand formatting:
+      insert_heading(text, level=1, design="fleuron")   chapters (باب)
+      insert_heading(text, level=2, design="bullet")    sections (ترجمة / فصل)
+      insert_paragraph(after, text, style="Normal")     body
+      format_matches("…", char_style="Prophetic Speech")  the Prophet's words ﷺ
+      add_footnote / add_custom_mark_note               takhrij in the note
+      insert_separator(after)                            ❁ ❁ ❁ between sections
+      insert_verses(["صدر *** عجز", …])                 poetry
+5. apply_honorifics()                         → ﷺ ﵁ ﵂ … as real glyphs
+6. build_faharis(people=[…], places=[…], sources=[…])   → the closing indexes
+7. audit_document(); save_document()
+8. export_pdf("book-print.pdf", "print");  export_pdf("book.pdf", "digital")
+```
+
+### Design rules the tools already follow (don't fight them)
+
+- **Colour marks structure, never reading text.** Body, footnotes and headings'
+  text are ink; the house *accent* is for chapter titles, numbers, ornaments,
+  rules; *secondary* (usually gold) for ornament detail. No bright red, ever.
+  Every design tool takes `color=None` → house palette. Palettes:
+  `list_house_palettes()` (maroon, brick, navy-gold, green-gold, teal,
+  burgundy-silk, ink); a client's own colours via `set_house_colors(accent=…,
+  secondary=…, ink=…)`.
+- **Headings are typography, not boxes.** Centred, accent colour, no ruled
+  frames. Decoration is optional and anchored behind the text (so the table of
+  contents stays clean): `fleuron`, `flanked` (calligraphic brackets measured
+  to the title), `cartouche`, `bullet` (small khatam for sub-headings).
+- **Tashkil.** The author's harakat are kept exactly. Vocalised text gets
+  "at least" line spacing so marks are never clipped. Footnotes, references,
+  book names and the running-head title are **unvocalised** (preset default
+  `notes_tashkil="strip"`, re-applied on save). Tools: `tashkil_report()` to
+  check a manuscript, `tashkil(mode)` (normalize | strip | keep-shadda | light),
+  `color_tashkil()` (Word colours diacritics document-wide; the PDF export
+  applies it). Searching ignores harakat: «قال» finds «قَالَ».
+- **Footnotes like a printed book:** a fine rule over 65 % of the line
+  (`set_note_separator("rule" | "tapered" | "khatam" | "diamond" | "swash",
+  width_pct=…)`), marks «(١)» in Arabic books or «57-» in English ones
+  (`set_note_mark_style`), «=» where a note continues on the next page.
+- **Running heads:** chapter on odd pages, book title on even, folio on the
+  outer side: `design_running_head("fleuron" | "rule" | "boxed" | "vignette"
+  | "cartouche")`.
+- **Justification:** `justify` or `kashida` (= low kashida). Never set medium or
+  high kashida by hand: Word drops whole lines of vocalised Arabic.
+- **Numbers:** Arabic text numbers are typed as ١٢٣. Word draws *automatic*
+  numbers (note marks, pages) with the computer's "Numeral" option;
+  `export_pdf` sets it per book (hindi for Arabic/Urdu, context for English)
+  and restores it.
+
+### Tahqiq house style (Abu Bakar Gondal's books)
+
+- Text is the author's: **no additions, deletions or rewording** — not a
+  letter, not a harakah. Layout decisions only; report judgement calls.
+- 17×24 cm, Amiri body 13 pt, Sakkal Majalla headings, maroon `#520912`
+  accent (`apply_book_preset("tahqiq")`).
+- Narrations numbered like a musnad `[١] [٢] …`, continuous; **the number is
+  the footnote mark** (`add_custom_mark_note(para, mark="[١]", …)`), and the
+  note opens with the same bold number.
+- All takhrij, rijal (◆ name bold) and «قلت:» go into that one note.
+- Isnad regular; the quoted matn bold; **only the Prophet's own words** in
+  bold accent (`char_style="Prophetic Speech"`) — not the companion's narrative,
+  gestures or comments.
+- Each section ends with `insert_separator()`; chapters do not start new pages
+  unless asked (`chapters_new_page=False`).
+- Closing فهارس via `build_faharis`; the topics index is the table of contents.
+
+### English and bilingual books (Bulugh al-Maram style)
+
+```
+apply_book_preset("bilingual", title="Bulugh al-Maram")
+insert_bilingual_heading("كتاب الطهارة", "Book 1: Purification")
+insert_hadith_entry(94, arabic, english, source="Related by the seven Imams.")
+insert_glossary_entry("Ghusl", "The full ritual washing of the body.")
+```
+
+Arabic «٩٤ ـــ …» right-to-left, then «94. Narrated …» with the Prophet's
+words in bold, then the source line; notes numbered «57-».
+
+### Ornament and page art (native vectors, sharp in print)
+
+`insert_ornament` (shamsa, star8 with a number, woven rosette, girih ring,
+calligraphic divider, bands, cartouches), `insert_cartouche_title`,
+`add_page_frame(style="rings" | "chain" | "khatam" | "8")`,
+`insert_part_title("الفهارس", items=[…])`, `insert_svg` for the client's own art.
+
+### PDF for print and screen
+
+| Need | Call |
+|---|---|
+| Printer's file | `export_pdf(path, "print")` → TrimBox, 3 mm bleed, crop marks, no scaling |
+| Reading / sharing | `export_pdf(path, "digital")` → bookmarks open, spreads, RTL page order |
+| Client spec | `set_pdf_preferences(bleed_mm=5, crop_marks=False, pdfa=True)` once; every export follows |
+
+Word on Windows is used when available (fields, indexes and contents are
+refreshed first); LibreOffice otherwise. Page size, margins, gutter and mirror
+margins come from `set_book_layout`.
+
+### Book tool map
+
+| Area | Tools |
+|---|---|
+| Whole book | `apply_book_preset`, `set_book_layout`, `set_house_colors`, `list_house_palettes`, `get_house_colors` |
+| Headings & parts | `insert_heading`, `insert_bilingual_heading`, `insert_part_title`, `insert_cartouche_title`, `define_numbered_style` |
+| Text | `format_matches`, `apply_style_where`, `define_style`, `insert_rich_paragraph`, `apply_honorifics`, `insert_verses`, `add_margin_note`, `insert_separator` |
+| Tashkil | `tashkil`, `tashkil_report`, `color_tashkil` |
+| Notes | `add_footnote`, `add_custom_mark_note`, `set_note_mark_style`, `set_note_separator`, `set_note_continuation`, `set_note_numbering`, `convert_notes` |
+| Pages | `design_running_head`, `design_header_footer`, `set_page_numbering`, `add_page_frame`, `set_page_border` |
+| Indexes | `build_faharis`, `mark_index_entries`, `insert_index`, `insert_toc` |
+| English | `insert_hadith_entry`, `insert_glossary_entry` |
+| Direction | `set_document_direction`, `set_paragraph_direction`, `get_direction_report` |
+| Art | `insert_ornament`, `list_ornaments`, `insert_svg` |
+| Output | `export_pdf`, `set_pdf_preferences`, `get_pdf_preferences` |
+
+## Workflows
+
+### Creating Documents from Markdown
+
+```
+1. create_from_markdown(output_path, markdown="# Title\n\nContent with **bold**.")
+2. audit_document()                          → verify integrity
+3. save_document()                           → save to disk
+```
+
+Supports: headings, bold/italic/strikethrough, links, images, bullet/numbered/nested lists, code blocks, blockquotes, tables, footnotes, task lists. Smart typography (curly quotes, em/en dashes, ellipses) is applied automatically.
+
+### Creating Blank Documents
+
+```
+1. create_document("/path/to/new.docx")      → blank document
+2. create_document("/path/to/new.docx", template_path="/path/to/template.dotx")  → from template
+```
+
+### Editing Existing Documents
 
 ```
 1. open_document("/path/to/file.docx")
@@ -38,6 +186,46 @@ A .docx file is a ZIP archive of XML files. This server unpacks the archive, par
 
 **Always `audit_document()` before saving** to catch structural issues (orphaned footnotes, duplicate paraIds, unpaired bookmarks, missing relationship targets).
 
+### Generating a Change Log from an Edited Document
+
+After making tracked edits, export a human-readable summary:
+
+```
+1. open_document("/path/to/file.docx")
+2. ... make edits with tracked=True (default) ...
+3. save_document("/path/to/output.docx")
+4. generate_change_summary("/path/to/output_changes.txt")
+   → {"path": "..._changes.txt", "change_count": N}
+```
+
+The `.txt` lists each change as a numbered entry — INSERTION, DELETION, or REPLACEMENT — with author, date, and text. Paste it into an email, a PR description, or a client handover note.
+
+Use `generate_change_summary` when you **have the open document** with tracked edits.  
+Use `diff_to_text` when you **have two separate files** you want to compare.
+
+### Comparing Two DOCX Files
+
+When you have an original and a revised file (not the same editing session):
+
+```
+1. diff_to_text("original.docx", "revised.docx")
+   → {"docx_path": "original_diff.docx", "text_path": "original_diff.txt", "change_count": N}
+```
+
+`diff_to_text` runs a paragraph-level diff, writes a tracked-change DOCX, and writes the same numbered plain-text summary as `generate_change_summary`. To get only the DOCX without the .txt, use `compare_documents` instead.
+
+### Direct Edits Without Revision Markup
+
+When you want to apply edits silently (no accept/reject required by the reviewer):
+
+```
+replace_text(para_id, find="DRAFT", replace="FINAL", tracked=False)
+insert_text(para_id, " (Amended)", tracked=False)
+modify_cell(0, 0, 0, "Updated value", tracked=False)
+```
+
+All five editing tools (`insert_text`, `delete_text`, `replace_text`, `modify_cell`, `edit_header_footer`) support `tracked=False`. The default is always `tracked=True`.
+
 ## Tool Quick Reference
 
 ### Document Lifecycle
@@ -45,6 +233,8 @@ A .docx file is a ZIP archive of XML files. This server unpacks the archive, par
 | Tool | Purpose | Key args |
 |------|---------|----------|
 | `open_document` | Open .docx for editing | `path` |
+| `create_document` | Create blank .docx or from template | `output_path`, `template_path` |
+| `create_from_markdown` | Create .docx from markdown | `output_path`, `markdown` or `md_path`, `template_path` |
 | `close_document` | Close and clean up | — |
 | `get_document_info` | Stats overview | — |
 | `save_document` | Save to .docx | `output_path` (optional) |
@@ -59,13 +249,28 @@ A .docx file is a ZIP archive of XML files. This server unpacks the archive, par
 
 ### Track Changes
 
+All five editing tools default to `tracked=True`. Pass `tracked=False` to any of them when you want the edit applied directly with no revision markup (useful for programmatic transforms the reviewer doesn't need to accept).
+
 | Tool | Purpose | Key args |
 |------|---------|----------|
-| `insert_text` | Tracked insertion (green underline) | `para_id`, `text`, `position` |
-| `delete_text` | Tracked deletion (red strikethrough) | `para_id`, `text` |
+| `insert_text` | Tracked insertion (underlined in Word) | `para_id`, `text`, `position`, `tracked` |
+| `delete_text` | Tracked deletion (red strikethrough) | `para_id`, `text`, `tracked` |
+| `replace_text` | Tracked del+ins pair — preferred for one-step replacement | `para_id`, `find`, `replace`, `tracked` |
+| `modify_cell` | Modify table cell text | `table_index`, `row`, `col`, `text`, `tracked` |
+| `edit_header_footer` | Edit header/footer text | `location`, `old_text`, `new_text`, `tracked` |
+| `set_formatting` | Bold/italic/underline/color with tracked markup | `para_id`, `text`, `bold`, `italic`, `underline`, `color` |
+| `set_track_changes` | Toggle Word's track-changes recording flag | `enabled` |
+| `get_tracked_changes` | List pending changes (author, date, type, text) | — |
 | `accept_changes` | Accept tracked changes | `author` (optional) |
 | `reject_changes` | Reject tracked changes | `author` (optional) |
-| `set_formatting` | Bold/italic/underline/color with tracked markup | `para_id`, `text`, `bold`, `italic`, `underline`, `color` |
+
+### Change Log
+
+| Tool | Purpose | Key args |
+|------|---------|----------|
+| `generate_change_summary` | Export tracked changes in the open doc as .txt | `output_path` (optional) |
+| `compare_documents` | Diff two files → tracked-change DOCX | `base_path`, `revised_path`, `output_path` |
+| `diff_to_text` | Diff two files → tracked-change DOCX + .txt | `base_path`, `revised_path`, `docx_output`, `text_output` |
 
 ### Tables
 
@@ -76,122 +281,6 @@ A .docx file is a ZIP archive of XML files. This server unpacks the archive, par
 | `modify_cell` | Modify cell text with tracked changes | `table_index`, `row`, `col`, `text` |
 | `add_table_row` | Add row to table | `table_index`, `cells` (optional), `row_idx` (optional) |
 | `delete_table_row` | Delete row with tracked changes | `table_index`, `row_index` |
-
-**Table column sizing:** Column widths are in DXA (1440 DXA = 1 inch). Page content widths:
-- A4 (11,906 DXA wide, 1" margins): **9,026 DXA** content width
-- US Letter (12,240 DXA wide, 1" margins): **9,360 DXA** content width
-
-**Header vs data cell widths must match exactly.** Even a 1 DXA difference between a header cell and its data cell causes persistent misalignment. Define column widths as constants and reuse them in every row.
-
-**Usable cell width** = column width − 240 DXA (default margins: 120 DXA each side).
-
-**Font character width reference** (avg DXA/char across a–z, A–Z, 0–9, measured from font files):
-
-Formula: `DXA/char = (advance / upm) × pt × 20`. Word `size:` = pt × 2.  
-Fitting: `chars × dxa_per_char ≤ column_width − 240` (240 = default cell margins, 120 each side).
-
-*Monospaced — all variants identical width:*
-
-| Font | 10pt | 11pt | 12pt | Notes |
-|------|------|------|------|-------|
-| PragmataPro (all variants) | 100 | 110 | 120 | Densest; exceptional Unicode coverage |
-| Cascadia Code NF | 117 | 129 | 141 | VS Code / Windows Terminal default |
-| Hack NF (all variants) | 120 | 132 | 144 | |
-| Courier New (7pt / 6pt) | ~84 / ~72 | — | — | Legacy |
-
-*Calibri (Office 2007–2023 body default):*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Light Italic | 99 | 109 | 119 |
-| Light | 100 | 110 | 120 |
-| Regular / Italic | 101 | 111 | 121 |
-| Bold / Bold Italic | 103 | 114 | 124 |
-
-*Aptos (Office 365/2024 default — replaced Calibri mid-2023):*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Light | 106 | 116 | 127 |
-| Regular / Italic | 108 | 119 | 130 |
-| Narrow Regular / Italic | 100 | 110 | 120 |
-| Narrow Bold / Bold Italic | 102–103 | 112–113 | 122–123 |
-| SemiBold | 111 | 122 | 133 |
-| Bold / Bold Italic | 113 | 124 | 136 |
-
-*Cambria (Office heading default):*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Italic | 105 | 116 | 126 |
-| Regular | 109 | 120 | 131 |
-| Bold Italic | 112 | 123 | 135 |
-| Bold | 116 | 128 | 139 |
-
-*Arial:*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Narrow Regular / Italic | 95 | 104 | 114 |
-| Narrow Bold / Bold Italic | 99 | 109 | 119 |
-| Regular / Italic | 116 | 127 | 139 |
-| Bold / Bold Italic | 121 | 133 | 145 |
-| Black | 137 | 151 | 165 |
-
-*Times New Roman:*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Italic | 106 | 117 | 128 |
-| Regular / Bold Italic | 111 | 122 | 133 |
-| Bold | 116 | 128 | 140 |
-
-*Verdana (widest — screen-optimised):*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Regular / Italic | 125 | 138 | 150 |
-| Bold / Bold Italic | 141 | 155 | 169 |
-
-*Georgia:*
-
-| Variant | 10pt | 11pt | 12pt |
-|---------|------|------|------|
-| Regular | 117 | 128 | 140 |
-| Italic | 118 | 129 | 141 |
-| Bold | 134 | 147 | 160 |
-| Bold Italic | 135 | 149 | 162 |
-
-*Equity B (Matthew Butterick):*
-
-| Variant | 10pt | 11pt | 12pt | Notes |
-|---------|------|------|------|-------|
-| Italic | 106 | 117 | 128 | |
-| Regular | 110 | 121 | 132 | |
-| Bold Italic | 113 | 124 | 135 | |
-| Bold | 116 | 127 | 139 | |
-| Caps Regular | 131 | 144 | 157 | lowercase = small caps |
-| Caps Bold | 137 | 151 | 165 | lowercase = small caps |
-
-*CJK — full-width Han/Hangul = exactly 1 em = pt × 20 DXA:*
-
-| Font | Script | Full-width (10/11/12pt) | Half-width ASCII |
-|------|--------|------------------------|-----------------|
-| SimSun (宋体) | SC | 200 / 220 / 240 | 100 / 110 / 120 |
-| Microsoft YaHei (微软雅黑) | SC | 200 / 220 / 240 | 117 / 129 / 141 |
-| PMingLiU (新細明體) | TC | 200 / 220 / 240 | 100 / 110 / 120 |
-| MS JhengHei (微軟正黑體) | TC | 200 / 220 / 240 | 116 / 128 / 139 |
-| MS PGothic | JP | 185 / 204 / 222 | 100 / 110 / 120 |
-| Yu Gothic | JP | 200 / 220 / 240 | 111 / 122 / 133 |
-| Malgun Gothic (맑은 고딕) | KR | 200 / 220 / 240 | 110 / 121 / 132 |
-| Batang (바탕) | KR | 200 / 220 / 240 | 119 / 131 / 143 |
-
-*Other scripts:*
-
-| Font | Script | 10pt | 11pt | 12pt |
-|------|--------|------|------|------|
-| Mangal | Devanagari (Hindi) | 172 | 190 | 207 |
-| Cordia New | Thai | 68 | 74 | 81 |
 
 ### Lists
 
@@ -260,15 +349,44 @@ Fitting: `chars × dxa_per_char ≤ column_width − 240` (240 = default cell ma
 | `remove_watermark` | Remove DRAFT watermarks | — |
 | `audit_document` | Full structural audit | — |
 
+### PII Scrubbing ⚠️ Experimental
+
+| Tool | Purpose | Key args |
+|------|---------|----------|
+| `scrub_pii` | Detect and permanently redact PII (EXPERIMENTAL — see warning) | `output_path`, `dry_run`, `entities`, `confidence_threshold` |
+| `sanitize_metadata` | Strip author/session metadata from document properties | `output_path`, `level` |
+
+**WARNING: `scrub_pii` is experimental and NOT suitable for production use.** It will miss PII. Never use it as the sole control for privileged, regulated, or legally sensitive documents.
+
+Known NER gaps:
+- Names in ALL-CAPS (ledger headers, table cells) — frequently missed
+- Single-token names with no surrounding context — unreliable
+- Non-English names (Arabic, CJK, African) — low recall on this English model
+- Names in legal boilerplate patterns (`Lender: Jane Doe`) — often skipped
+
+Pattern-based detectors (email, phone, SSN, credit card, IBAN) are reliable. The NER gaps apply only to PERSON and similar named-entity types.
+
+Always run `dry_run=True` first and review every detected entity manually before committing a redacted file.
+
 ## Essential Patterns
 
-### Replace Text (delete + insert on same paragraph)
+### Replace Text
+
+**Preferred — one-step:**
 
 ```
-1. search_text("30 days")              → find the paragraph
-2. get_paragraph(para_id)              → verify exact text
-3. delete_text(para_id, "30 days")     → tracked deletion
-4. insert_text(para_id, "60 days")     → tracked insertion
+1. search_text("30 days")                              → find the paragraph
+2. get_paragraph(para_id)                              → verify exact text
+3. replace_text(para_id, find="30 days", replace="60 days")
+```
+
+`replace_text` produces the same del+ins pair as the two-step approach but as a single call. It only marks the actually-changed portion, leaving common leading/trailing text as plain runs.
+
+**Two-step alternative** (use when you need to insert at a specific position relative to other content):
+
+```
+1. delete_text(para_id, "30 days")     → tracked deletion (red strikethrough)
+2. insert_text(para_id, "60 days")     → tracked insertion (underlined)
 ```
 
 Word shows both marks side by side: ~~30 days~~ **60 days**.
@@ -309,130 +427,13 @@ Word shows both marks side by side: ~~30 days~~ **60 days**.
 
 - **paraId** is an 8-char hex string (e.g., `"1A2B3C4D"`). Get them from `get_headings()` or `search_text()`.
 - **position** in `insert_text`: `"start"`, `"end"`, or a substring to insert after.
-- **author** defaults to `"Claude"` for all tracked changes and comments.
+- **author** defaults to `"Claude"` for all tracked changes and comments, or to the `DOCX_MCP_AUTHOR` environment variable when it is set.
 - **Save to new file** to preserve the original: `save_document("/path/to/revised.docx")`.
 - **Always verify before editing**: Use `get_paragraph()` to see the exact text before calling `delete_text()`. The text must match exactly within a single run.
 
 ## OOXML Pitfalls (Critical Knowledge)
 
 These hard-won lessons prevent silent document corruption. Word may "repair" broken documents by silently rewriting your edits.
-
-### Word for Mac: File-Refuses-to-Open Causes
-
-These four issues all produce "Word experienced an error trying to open the file" with no further detail. Each one causes a hard open failure on Word for Mac (Windows Word is more forgiving).
-
-#### 1. Field code elements in one `<w:r>` (fldChar + instrText)
-
-Every `w:fldChar` and `w:instrText` element must live in its **own separate `<w:r>`**. Packing begin/instrText/end into a single run is schema-invalid.
-
-```python
-# WRONG — all three in one run (causes hard open failure)
-r._r.append(fld_begin)
-r._r.append(instr)
-r._r.append(fld_end)
-
-# CORRECT — one element per run
-def _fld_run(para, fld_type=None, instr_text=None):
-    r = para.add_run()
-    if fld_type:
-        fc = OxmlElement('w:fldChar')
-        fc.set(qn('w:fldCharType'), fld_type)
-        r._r.append(fc)
-    if instr_text:
-        it = OxmlElement('w:instrText')
-        it.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
-        it.text = instr_text
-        r._r.append(it)
-    return r
-
-_fld_run(para, fld_type='begin')
-_fld_run(para, instr_text=' PAGE ')
-_fld_run(para, fld_type='end')
-```
-
-Add `xml:space="preserve"` to every `w:instrText` so Word parses the instruction correctly.
-
-#### 2. `w:titlePg` without a matching "first" header/footer
-
-`w:titlePg` in `sectPr` tells Word to use a separate first-page header/footer. Word then **requires** a `<w:headerReference w:type="first">` entry. Declaring the flag without the part causes a load failure on Word for Mac.
-
-**Fix:** either provide the "first" header/footer part, or don't set `titlePg` at all. In python-docx, never set `section.different_first_page_header_footer = True` unless you also populate `section.first_page_header`.
-
-#### 3. PNG image relationships before header/footer relationships (Word for Mac bug)
-
-Word for Mac has an undocumented constraint: if a PNG image relationship appears **before** header/footer relationships in `word/_rels/document.xml.rels`, the file refuses to open. JPEG images before header/footer are fine; only PNG triggers this.
-
-Relationship ordering in the rels file follows the order parts are registered in python-docx. **Fix:** call `add_headers_footers()` (or any function that accesses `section.header`/`section.footer`) before any `add_picture()` calls in the generator. This ensures header/footer get lower rIds than all PNG images.
-
-```python
-def main():
-    doc = setup_document()
-    add_headers_footers(doc)   # ← must come BEFORE any add_picture() calls
-    build_cover(doc)           # ← adds first image here
-    build_section1(doc)
-    # ...
-```
-
-#### 4. `w:abstractNum` elements after `w:num` elements in numbering.xml
-
-`CT_Numbering` is a strict OOXML sequence: **all `w:abstractNum` elements must precede all `w:num` elements**. If your generator merges custom numbering into a template that already has `w:num` entries, a naive `.append()` puts the new `w:abstractNum` after existing `w:num` entries — schema violation, hard open failure.
-
-**Fix:** insert new `abstractNum` elements before the first existing `w:num`, then append new `num` elements at the end.
-
-```python
-first_num = root.find(f'{{{W}}}num')
-for child in abstract_nums:
-    if first_num is not None:
-        first_num.addprevious(child)   # insert before first w:num
-    else:
-        root.append(child)
-for child in nums:
-    root.append(child)                 # append after all w:num
-```
-
-#### 5. `wp:extent` cx/cy values in the billions (corrupted EMU dimensions)
-
-Word for Mac refuses to open a file when any `<wp:extent>` element has `cx` or `cy` in the billions or trillions of EMUs. Normal document images range from 1–10 million EMUs (roughly 1–11 inches at 914,400 EMU/inch).
-
-Two distinct causes, same symptom:
-
-**Cause A — PIL BytesIO without DPI metadata:**
-`PIL.Image.save(buf, format='JPEG', quality=92)` writes no DPI metadata to the BytesIO. python-docx's image parser defaults to DPI ≈ 0, computing an astronomical "natural" width. Even when `width=Inches(5.8)` is specified, the derived `cy` (height) is calculated from the corrupted natural dimensions.
-
-```python
-# WRONG — no DPI in BytesIO → python-docx gets DPI≈0 → cx/cy in trillions
-img.save(buf, format='JPEG', quality=92)
-
-# CORRECT — embed DPI so python-docx computes sane natural dimensions
-img.save(buf, format='JPEG', quality=92, dpi=(96, 96))
-```
-
-**Cause B — double EMU conversion:**
-A helper that calls `Inches(width)` internally receives a pre-converted EMU value instead of a float. Tell-tale signature: `4,849,538,688,000 = 5,303,520 × 914,400` — the display width (`Inches(5.8)`) multiplied by `Inches()` a second time.
-
-```python
-TEXT_WIDTH = Inches(5.8)          # = 5,303,520 EMU
-
-# WRONG — add_image() calls Inches(width) internally, caller passes EMU
-add_image(doc, path, width=TEXT_WIDTH)   # → Inches(5303520) = 4,849,538,688,000
-
-# CORRECT — pass float inches so the internal Inches() call is the only conversion
-add_image(doc, path, width=5.8)
-```
-
-**Detection script:**
-```python
-import zipfile
-from lxml import etree
-
-with zipfile.ZipFile("file.docx") as z:
-    tree = etree.fromstring(z.read("word/document.xml"))
-WPD = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing'
-for i, ext in enumerate(tree.iter(f'{{{WPD}}}extent')):
-    cx = int(ext.get('cx', 0))
-    if cx > 100_000_000:  # > ~109 inches
-        print(f"Drawing {i}: cx={cx:,}  *** OVERSIZED — will fail on Word for Mac")
-```
 
 ### ParaId Rules
 
@@ -458,12 +459,6 @@ The `validate_paraids()` tool checks all of these. Run it after any structural e
 
 The `validate_footnotes()` tool checks reference/definition matching. Always run after adding footnotes.
 
-**Required styles:** The document template must contain `FootnoteReference` (character style, superscript) and `FootnoteText` (paragraph style). Missing styles cause silent rendering failures. Check with `get_styles()` before adding footnotes to an unfamiliar template.
-
-**Citing the same source multiple times:** You cannot reference the same footnote ID from two places. Call `add_footnote()` once per citation point — N citations of the same source = N separate `add_footnote()` calls, each with its own ID. Never reuse a footnote ID across paragraphs.
-
-**Multi-source citations at a single point:** When multiple sources support one statement, make successive `add_footnote()` calls at the same paragraph. They render as comma-delimited superscripts (e.g., ¹,²,³) — `add_footnote()` automatically inserts a superscript comma run when the last run of the target paragraph is already a footnote reference.
-
 **Word Recovery Warning:** When Word recovers/repairs a file, it renumbers ALL footnotes sequentially by document position, not by original ID. After any Word recovery, re-examine footnotes before further edits.
 
 ### Non-Breaking Spaces
@@ -478,6 +473,7 @@ Text inside `w:hyperlink` elements may not appear in `paragraph.text` from some 
 
 | Rule | Detail |
 |------|--------|
+| Default is `tracked=True` | All five editing tools (`insert_text`, `delete_text`, `replace_text`, `modify_cell`, `edit_header_footer`) emit revision markup by default. Pass `tracked=False` for immediate, silent edits. |
 | Use `w:delText` inside `w:del` | Never `w:t` — causes validation errors |
 | Preserve `w:rPr` formatting | Copy the original run's formatting into tracked change runs |
 | Minimal edits only | Mark only what changes — don't wrap entire paragraphs |
@@ -500,16 +496,6 @@ The docx-mcp tools accept Unicode text directly — pass the actual characters, 
 ### Element Order in `<w:pPr>`
 
 The OOXML schema requires a specific element order: `<w:pStyle>`, `<w:numPr>`, `<w:spacing>`, `<w:ind>`, `<w:jc>`, `<w:rPr>` last. Out-of-order elements cause validation warnings and may trigger Word recovery.
-
-### Element Order in `<w:rPr>`
-
-Child elements inside `w:rPr` also have a required order. Wrong order = "unreadable content" in Word:
-
-```
-w:rStyle → w:rFonts → w:b/w:bCs → w:i/w:iCs → w:color → w:sz/w:szCs → w:u → w:vertAlign
-```
-
-Common mistake: placing `w:u` before `w:sz`, or `w:color` after `w:sz`.
 
 ### Heading Numbering
 
@@ -535,25 +521,22 @@ Markdown doesn't have real footnotes — `[^1]` syntax is a convention that some
 
 When extracting text from paragraphs that contain footnote references, the superscript reference numbers are invisible in the XML text but adjacent characters concatenate. Example: "File #8" followed by superscript footnote "73" extracts as "File #873". Account for this when using `search_text()` with regex patterns on footnoted text.
 
-### Template List Indents May Override Your Content
+### Multi-Source Citations Are Comma-Delimited
 
-A document template's numbering definition often specifies its own indents. When inserting list content via `add_list()`, verify the rendered indent matches expectations — the template's `w:abstractNum` definition takes precedence. If indents look wrong, the fix requires editing the numbering XML directly (outside docx-mcp's current tool set) or applying explicit paragraph indent overrides.
+Calling `add_footnote()` twice on the same paragraph produces comma-delimited superscripts (¹,²,³). `add_footnote()` automatically inserts a superscript comma run when the last run of the target paragraph is already a footnote reference — no extra steps needed.
 
 ### Clickable Superscript Cross-References
 
-Every footnote reference superscript created by `add_footnote()` is automatically wrapped in a `<w:hyperlink w:anchor="_FnN">` pointing to a `<w:bookmarkStart w:name="_FnN">` in the footnote definition. This means:
+Every footnote reference superscript created by `add_footnote()` is wrapped in `<w:hyperlink w:anchor="_FnN">` pointing to a bookmark in the footnote definition. Clicking the superscript navigates to the footnote in Word and in PDF exports.
 
-- Clicking the superscript navigates to the footnote in Word **and** in PDF exports.
-- The back-arrow in Word's footnote pane navigates back to the reference in the body.
-
-**Subsequent reference to the same footnote** — use `add_footnote_ref(para_id, footnote_id)` to add another superscript that links to the same footnote without duplicating the definition:
+**Subsequent reference to the same footnote** — use `add_footnote_ref(para_id, footnote_id)`:
 
 ```
-fn_id = add_footnote("00000004", "SWGDE Best Practices")["footnote_id"]
+fn_id = add_footnote("00000004", "Source")["footnote_id"]
 add_footnote_ref("00000009", fn_id)   # second citation → same footnote
 ```
 
-Do NOT call `add_footnote()` twice with the same content — that creates two separate definitions. `add_footnote_ref` retroactively adds the anchor bookmark if the footnote predates this feature.
+Do NOT call `add_footnote()` twice with the same content — that duplicates the definition. `add_footnote_ref` retroactively adds the anchor bookmark if the footnote predates this feature.
 
 ### Hotlinked URLs in Footnotes
 
@@ -563,19 +546,21 @@ Pass `url="https://..."` to `add_footnote()` to render the URL as a clickable hy
 add_footnote(para_id, "SWGDE Best Practices for Mobile Device Evidence Collection", url="https://www.swgde.org/documents")
 ```
 
-- Label text is added as a plain run; the URL is appended as a `<w:hyperlink>` with `Hyperlink` character style and a relationship registered in `word/_rels/footnotes.xml.rels`.
+- The label text is added as a plain run; the URL is appended as a `<w:hyperlink>` with `Hyperlink` character style.
+- A relationship entry (`TargetMode="External"`) is automatically registered in `word/_rels/footnotes.xml.rels`.
 - Multiple footnotes with different URLs each get a distinct `rId`.
-- Omitting `url` produces plain-text footnotes (backward-compatible).
+- If `url` is omitted the behavior is unchanged (backward-compatible).
 
 ## Audit Checklist
 
 Before delivering any edited document, run through this checklist:
 
 ```
-1. audit_document()         → comprehensive structural check
-2. validate_footnotes()     → if any footnotes were added/modified
-3. validate_paraids()       → if any structural changes were made
-4. save_document("new.docx") → save to new file (preserve original)
+1. audit_document()              → comprehensive structural check
+2. validate_footnotes()          → if any footnotes were added/modified
+3. validate_paraids()            → if any structural changes were made
+4. save_document("new.docx")     → save to new file (preserve original)
+5. generate_change_summary()     → (optional) produce .txt change log for handover
 ```
 
 The `audit_document()` tool checks all of the following in one call:

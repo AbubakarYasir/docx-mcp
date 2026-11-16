@@ -6,6 +6,8 @@ It runs the upstream server with fixes and additions for producing Word files
 that open cleanly in Microsoft Word, and for Arabic / right-to-left work.
 
 Every change is listed in [CHANGELOG.md](CHANGELOG.md) with the reason for it.
+The [book guide](docs/BOOKS.md) documents every book tool; the
+[README](README.md) shows what the fork makes.
 
 ## Arabic and right-to-left documents
 

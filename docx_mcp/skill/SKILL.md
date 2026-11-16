@@ -1,6 +1,6 @@
 ---
 name: docx-mcp
-description: "Use when creating or editing Word (.docx) documents — from scratch, from markdown, or from templates. Triggers: creating documents, converting markdown to docx, reviewing contracts, marking up reports, adding revision comments, validating document structure, removing watermarks, auditing OOXML integrity, bulk text replacement with revisions, footnote management, paragraph-level edits. Requires the docx-mcp MCP server to be running."
+description: "Use when creating or editing Word (.docx) documents — from scratch, from markdown, or from templates — and when typesetting books: Arabic/Urdu tahqiq editions, English or bilingual hadith books, print-ready and digital PDFs. Triggers: typesetting a book or risalah, Arabic/RTL documents, tashkil, footnotes and faharis, ornaments and page frames, house colours, exporting PDF for print, creating documents, creating documents, converting markdown to docx, reviewing contracts, marking up reports, adding revision comments, validating document structure, removing watermarks, auditing OOXML integrity, bulk text replacement with revisions, footnote management, paragraph-level edits. Requires the docx-mcp MCP server to be running."
 ---
 
 # Creating and Editing Word Documents with docx-mcp
@@ -21,8 +21,135 @@ A .docx file is a ZIP archive of XML files. This server unpacks the archive, par
 - Removing watermarks
 - Bulk find-and-replace with revision marks
 - Any task where changes must be visible as Word revisions
+- Typesetting books — Arabic, Urdu, English, bilingual — and exporting print / digital PDFs (see **Books** below)
 
-**Do NOT use for:** PDFs, spreadsheets, or `.doc` (legacy binary format — convert to .docx first).
+**Do NOT use for:** editing existing PDFs, spreadsheets, or `.doc` (legacy binary format — convert to .docx first).
+
+## Books: Arabic, Urdu and English (this fork)
+
+This server typesets whole books, not just documents: scholarly Arabic editions
+(tahqiq, takhrij), Urdu books, English translations of hadith collections, and
+bilingual works, then exports print-ready and digital PDFs. Everything stays a
+normal, editable Word file: real styles, live footnotes, live indexes.
+
+### The book workflow
+
+```
+1. create_document("book.docx")
+2. apply_book_preset("tahqiq", title="…", author="…", palette="maroon")
+      presets: tahqiq | kitab | urdu-nastaliq | english | bilingual
+3. set_house_colors(...)                      → only if the client has their own colours
+4. write with styles, never hand formatting:
+      insert_heading(text, level=1, design="fleuron")   chapters (باب)
+      insert_heading(text, level=2, design="bullet")    sections (ترجمة / فصل)
+      insert_paragraph(after, text, style="Normal")     body
+      format_matches("…", char_style="Prophetic Speech")  the Prophet's words ﷺ
+      add_footnote / add_custom_mark_note               takhrij in the note
+      insert_separator(after)                            ❁ ❁ ❁ between sections
+      insert_verses(["صدر *** عجز", …])                 poetry
+5. apply_honorifics()                         → ﷺ ﵁ ﵂ … as real glyphs
+6. build_faharis(people=[…], places=[…], sources=[…])   → the closing indexes
+7. audit_document(); save_document()
+8. export_pdf("book-print.pdf", "print");  export_pdf("book.pdf", "digital")
+```
+
+### Design rules the tools already follow (don't fight them)
+
+- **Colour marks structure, never reading text.** Body, footnotes and headings'
+  text are ink; the house *accent* is for chapter titles, numbers, ornaments,
+  rules; *secondary* (usually gold) for ornament detail. No bright red, ever.
+  Every design tool takes `color=None` → house palette. Palettes:
+  `list_house_palettes()` (maroon, brick, navy-gold, green-gold, teal,
+  burgundy-silk, ink); a client's own colours via `set_house_colors(accent=…,
+  secondary=…, ink=…)`.
+- **Headings are typography, not boxes.** Centred, accent colour, no ruled
+  frames. Decoration is optional and anchored behind the text (so the table of
+  contents stays clean): `fleuron`, `flanked` (calligraphic brackets measured
+  to the title), `cartouche`, `bullet` (small khatam for sub-headings).
+- **Tashkil.** The author's harakat are kept exactly. Vocalised text gets
+  "at least" line spacing so marks are never clipped. Footnotes, references,
+  book names and the running-head title are **unvocalised** (preset default
+  `notes_tashkil="strip"`, re-applied on save). Tools: `tashkil_report()` to
+  check a manuscript, `tashkil(mode)` (normalize | strip | keep-shadda | light),
+  `color_tashkil()` (Word colours diacritics document-wide; the PDF export
+  applies it). Searching ignores harakat: «قال» finds «قَالَ».
+- **Footnotes like a printed book:** a fine rule over 65 % of the line
+  (`set_note_separator("rule" | "tapered" | "khatam" | "diamond" | "swash",
+  width_pct=…)`), marks «(١)» in Arabic books or «57-» in English ones
+  (`set_note_mark_style`), «=» where a note continues on the next page.
+- **Running heads:** chapter on odd pages, book title on even, folio on the
+  outer side: `design_running_head("fleuron" | "rule" | "boxed" | "vignette"
+  | "cartouche")`.
+- **Justification:** `justify` or `kashida` (= low kashida). Never set medium or
+  high kashida by hand: Word drops whole lines of vocalised Arabic.
+- **Numbers:** Arabic text numbers are typed as ١٢٣. Word draws *automatic*
+  numbers (note marks, pages) with the computer's "Numeral" option;
+  `export_pdf` sets it per book (hindi for Arabic/Urdu, context for English)
+  and restores it.
+
+### Tahqiq house style (Abu Bakar Gondal's books)
+
+- Text is the author's: **no additions, deletions or rewording** — not a
+  letter, not a harakah. Layout decisions only; report judgement calls.
+- 17×24 cm, Amiri body 13 pt, Sakkal Majalla headings, maroon `#520912`
+  accent (`apply_book_preset("tahqiq")`).
+- Narrations numbered like a musnad `[١] [٢] …`, continuous; **the number is
+  the footnote mark** (`add_custom_mark_note(para, mark="[١]", …)`), and the
+  note opens with the same bold number.
+- All takhrij, rijal (◆ name bold) and «قلت:» go into that one note.
+- Isnad regular; the quoted matn bold; **only the Prophet's own words** in
+  bold accent (`char_style="Prophetic Speech"`) — not the companion's narrative,
+  gestures or comments.
+- Each section ends with `insert_separator()`; chapters do not start new pages
+  unless asked (`chapters_new_page=False`).
+- Closing فهارس via `build_faharis`; the topics index is the table of contents.
+
+### English and bilingual books (Bulugh al-Maram style)
+
+```
+apply_book_preset("bilingual", title="Bulugh al-Maram")
+insert_bilingual_heading("كتاب الطهارة", "Book 1: Purification")
+insert_hadith_entry(94, arabic, english, source="Related by the seven Imams.")
+insert_glossary_entry("Ghusl", "The full ritual washing of the body.")
+```
+
+Arabic «٩٤ ـــ …» right-to-left, then «94. Narrated …» with the Prophet's
+words in bold, then the source line; notes numbered «57-».
+
+### Ornament and page art (native vectors, sharp in print)
+
+`insert_ornament` (shamsa, star8 with a number, woven rosette, girih ring,
+calligraphic divider, bands, cartouches), `insert_cartouche_title`,
+`add_page_frame(style="rings" | "chain" | "khatam" | "8")`,
+`insert_part_title("الفهارس", items=[…])`, `insert_svg` for the client's own art.
+
+### PDF for print and screen
+
+| Need | Call |
+|---|---|
+| Printer's file | `export_pdf(path, "print")` → TrimBox, 3 mm bleed, crop marks, no scaling |
+| Reading / sharing | `export_pdf(path, "digital")` → bookmarks open, spreads, RTL page order |
+| Client spec | `set_pdf_preferences(bleed_mm=5, crop_marks=False, pdfa=True)` once; every export follows |
+
+Word on Windows is used when available (fields, indexes and contents are
+refreshed first); LibreOffice otherwise. Page size, margins, gutter and mirror
+margins come from `set_book_layout`.
+
+### Book tool map
+
+| Area | Tools |
+|---|---|
+| Whole book | `apply_book_preset`, `set_book_layout`, `set_house_colors`, `list_house_palettes`, `get_house_colors` |
+| Headings & parts | `insert_heading`, `insert_bilingual_heading`, `insert_part_title`, `insert_cartouche_title`, `define_numbered_style` |
+| Text | `format_matches`, `apply_style_where`, `define_style`, `insert_rich_paragraph`, `apply_honorifics`, `insert_verses`, `add_margin_note`, `insert_separator` |
+| Tashkil | `tashkil`, `tashkil_report`, `color_tashkil` |
+| Notes | `add_footnote`, `add_custom_mark_note`, `set_note_mark_style`, `set_note_separator`, `set_note_continuation`, `set_note_numbering`, `convert_notes` |
+| Pages | `design_running_head`, `design_header_footer`, `set_page_numbering`, `add_page_frame`, `set_page_border` |
+| Indexes | `build_faharis`, `mark_index_entries`, `insert_index`, `insert_toc` |
+| English | `insert_hadith_entry`, `insert_glossary_entry` |
+| Direction | `set_document_direction`, `set_paragraph_direction`, `get_direction_report` |
+| Art | `insert_ornament`, `list_ornaments`, `insert_svg` |
+| Output | `export_pdf`, `set_pdf_preferences`, `get_pdf_preferences` |
 
 ## Workflows
 

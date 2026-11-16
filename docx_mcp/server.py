@@ -35,7 +35,20 @@ mcp = FastMCP(
         "handle under which the document is stored. If you run multiple "
         "concurrent editing flows, pass a unique handle (e.g. a UUID) to each "
         "tool call so sessions don't collide. Omitting the handle uses a shared "
-        "`__default__` slot — fine for a single caller, unsafe for parallel ones."
+        "`__default__` slot — fine for a single caller, unsafe for parallel ones.\n\n"
+        "BOOKS (Arabic, Urdu, English, bilingual): start with apply_book_preset "
+        "(tahqiq | kitab | urdu-nastaliq | english | bilingual) — page, fonts, "
+        "labelled styles, running heads, footnote design, note marks, tashkil "
+        "handling, honorifics and house colours in one call. Then write with "
+        "styles: insert_heading (design fleuron | flanked | cartouche | bullet), "
+        "format_matches(char_style=...), add_custom_mark_note for [١] narration "
+        "numbers that carry their takhrij, insert_separator, insert_verses, "
+        "insert_hadith_entry for English hadith books. Colours: leave color unset "
+        "so the house palette applies (set_house_colors for a client's own). "
+        "Harakat: tashkil_report / tashkil; notes and book names stay "
+        "unvocalised. Finish with build_faharis and export_pdf(path, 'print' | "
+        "'digital'). Arabic text is detected and marked right-to-left "
+        "automatically on save."
     ),
 )
 
